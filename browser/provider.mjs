@@ -1,5 +1,5 @@
 import { fail } from './domain.mjs';
-export const defaults = { vision: ['qwen3-vl-plus', 'qwen3-vl-plus-2025-12-19'], language: ['qwen3.7-plus', 'qwen3.6-plus', 'qwen-plus'] };
+export const defaults = { vision: ['qwen3-vl-plus', 'qwen3-vl-plus-2025-12-19'], language: ['qwen3.7-plus', 'qwen3.6-plus', 'qwen-plus'], image: ['qwen-image-plus'] };
 const rates = { 'qwen3.7-plus': [0.826, 3.301], 'qwen3.6-plus': [1.101, 6.602], 'qwen-plus': [1.2, 12], 'qwen3-vl-plus': [0.6, 4.8], 'qwen3-vl-plus-2025-12-19': [0.6, 4.8] };
 export function config(v = {}) {
   const workspace = String(v.workspace || '').trim();

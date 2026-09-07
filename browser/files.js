@@ -93,6 +93,12 @@ export async function parseFile(fileName, base64) {
     const entries = Object.values(zip.files);
     if (entries.length > 2000 || entries.reduce((sum, f) => sum + (f._data?.uncompressedSize || 0), 0) > 80*1024*1024) throw fail('Word 解壓後太大，請分拆檔案。');
     if (!zip.file('word/document.xml')) throw fail('Word 文件缺少內容或受保護。');
+    const structure = xml(await zip.file('word/document.xml').async('string'));
+    result.text += '\n[Word layout metadata]\n' + JSON.stringify({
+      columns:[...structure.getElementsByTagNameNS('*','cols')].map(n=>n.getAttribute('w:num') || '1'),
+      tables:[...structure.getElementsByTagNameNS('*','tbl')].map(n=>[...n.children].filter(c=>c.localName==='tr').map(r=>[...r.children].filter(c=>c.localName==='tc').map(xmlText))),
+      borderedParagraphs:[...structure.getElementsByTagNameNS('*','p')].filter(n=>n.getElementsByTagNameNS('*','pBdr').length).map(xmlText)
+    }) + '\n';
     for (const f of entries.filter(f => /^word\/(document|header\d+|footer\d+|footnotes|endnotes)\.xml$/.test(f.name))) result.text += xmlText(xml(await f.async('string')).documentElement) + '\n';
     for (const f of entries.filter(f => /^word\/media\//.test(f.name) && !f.dir)) {
       if (result.images.length >= 8) throw fail('Word 超過 8 張圖片，請分拆檔案。');

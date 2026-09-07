@@ -50,3 +50,19 @@ body[data-view="review"] .toast{bottom:78px}
 @media(max-width:980px){.brand-name{font-size:19px;letter-spacing:.02em}}
 @media(max-width:760px){.brand{gap:6px}.brand-name{font-size:18px;letter-spacing:0}.header-actions{gap:10px}.header-actions>.quiet:first-child{font-size:10px}.connection-button{padding:7px 8px;font-size:10px}}
 @media(max-width:390px){.brand-name{font-size:16px}.header-actions{gap:7px}.header-actions>.quiet:first-child{font-size:9px}.connection-button{padding:6px 7px;font-size:9px}}
+/* Source worksheet structure: print-friendly, editable, no decorative chrome. */
+.source-table { border-collapse: collapse; width:100%; margin:12px 0; }
+.source-table td { border:1px solid #333; padding:8px; min-width:32px; height:36px; white-space:pre-wrap; }
+.answer-boxes { display:flex; flex-wrap:wrap; gap:10px; margin:16px 0; }
+.answer-boxes span { display:block; width:76px; height:42px; border:1px solid #333; }
+.source-bordered { border:1px solid #333; padding:16px 16px 16px 40px !important; }
+.source-two-columns { columns:2; column-gap:28px; }
+.source-two-columns > li { break-inside:avoid; }
+.retained-picture { display:block; max-width:100%; max-height:220px; object-fit:contain; margin:12px 0; }
+.exact-groups { display:flex; flex-wrap:wrap; gap:10px; margin:12px 0; }
+.exact-groups > span { border:1px solid #333; padding:8px; max-width:180px; }
+.source-header,.question-text,.question-hint { white-space:pre-wrap; }
+#modify-original { max-height:170px; overflow:auto; }
+#modify-instruction { width:100%; padding:12px; border:1px solid #cdd1c6; border-radius:6px; font:inherit; }
+@media print { .source-page-break { break-before:page; } .retained-picture { break-inside:avoid; } }
+@media(max-width:600px) { .source-two-columns { columns:1; } }

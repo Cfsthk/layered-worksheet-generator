@@ -2,10 +2,64 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { schema, worksheet, checkedVersion } from '../browser/domain.mjs';
 import { chat, config, host, estimate } from '../browser/provider.mjs';
+import { levelPaths, generateProgression } from '../browser/progression.mjs';
 
 const source = () => structuredClone(schema);
 const output = () => { const v = source(); v.questions[0].answer = 'incorrect'; return v; };
 const json = value => new Response(JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(value) } }] }));
+test('hidden adjacent paths honor any baseline', () => {
+  assert.deepEqual(levelPaths([1,7],4),[[3,2,1],[5,6,7]]);
+  assert.deepEqual(levelPaths([1,4],2),[[1],[3,4]]);
+  assert.deepEqual(levelPaths([4],4),[[],[]]);
+});
+test('adjacent generation feeds previous output and only returns requested levels', async () => {
+  const seen=[];
+  const result=await generateProgression({source:worksheet(source()),baseline:4,levels:[1,7]},async (service,prompt)=>{
+    if (prompt.startsWith('Audit')) return {value:{pass:true,issues:[]},meta:{}};
+    const [,level,prior] = prompt.match(/level (\d)\/7 from ADJACENT level (\d)/);
+    seen.push([Number(level),Number(prior)]);
+    if (+prior !== 4) assert.match(prompt.split('ADJACENT:')[1],new RegExp(`question-${prior}`));
+    const v=output(); v.questions[0].prompt=`question-${level}`; v.questions[0].hint=`support-${level}`;
+    return {value:v,meta:{model:'mock'}};
+  });
+  assert.deepEqual(Object.keys(result.versions).sort(),['1','7']);
+  assert.deepEqual(seen.filter(([l])=>l<4),[[3,4],[2,3],[1,2]]);
+  assert.deepEqual(seen.filter(([l])=>l>4),[[5,4],[6,5],[7,6]]);
+  assert.equal(result.versions[1].questions[0].layout.answerStyle,'boxes');
+});
+test('insufficient difference retries once then warns', async () => {
+  let calls=0;
+  const result=await generateProgression({source:worksheet(source()),baseline:4,levels:[3]},async (s,p)=>{
+    calls++;
+    return p.startsWith('Audit') ? {value:{pass:false,issues:['same hints']},meta:{}} : {value:output(),meta:{}};
+  });
+  assert.equal(calls,4); assert.match(result.versions[3].notices.join(''),/程度差異不足/);
+});
+test('failed intermediate stops only its dependent branch', async () => {
+  const result=await generateProgression({source:worksheet(source()),baseline:4,levels:[1,5]},async(s,p)=>{
+    if(p.startsWith('Audit')) return {value:{pass:true},meta:{}};
+    if(p.includes('level 3/7')) throw new Error('service unavailable');
+    const v=output();v.questions[0].hint='new support';return {value:v,meta:{}};
+  });
+  assert.ok(result.versions[5]);assert.ok(result.failures[1]);assert.equal(result.versions[1],undefined);
+});
+test('teacher revision keeps instruction and rejects changed objective', async () => {
+  await assert.rejects(generateProgression({source:worksheet(source()),baseline:4,levels:[4],operation:'replace',instruction:'改為加法'},async(s,p)=>{
+    assert.match(p,/改為加法/);return {value:{objectiveChange:true,reason:'不同概念'},meta:{}};
+  }),/不同概念/);
+});
+test('baseline retains original wording and fill-in boxes',async()=>{
+  const result=await generateProgression({source:worksheet(source()),baseline:4,levels:[4]},async()=>{
+    const v=output();v.questions[0].prompt='different';return {value:v,meta:{}};
+  });
+  assert.equal(result.versions[4].questions[0].prompt,source().questions[0].prompt);
+  assert.equal(result.versions[4].questions[0].layout.answerStyle,'boxes');
+});
+test('layout and exact quantity diagrams validate bounded data',()=>{
+  const v=output();v.questions[0].diagram={type:'groups',groups:3,count:4,caption:''};
+  assert.equal(worksheet(v).questions[0].diagram.count,4);
+  v.questions[0].layout.boxCount=999;assert.throws(()=>worksheet(v));
+});
 test('source may omit answers; generated versions may not', () => {
   assert.equal(worksheet(source()).questions[0].answer, '');
   assert.throws(() => checkedVersion(source(), source(), 1, false));

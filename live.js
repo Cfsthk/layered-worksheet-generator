@@ -1,6 +1,6 @@
 "use strict";
 // Integration layer: the original visual demo remains available without a key.
-const browserMode = location.protocol !== 'file:' && !['127.0.0.1', 'localhost', '[::1]'].includes(location.hostname);
+const browserMode = location.protocol !== 'file:';
 let browserService;
 const live = { available: browserMode, pendingRead: false, document: null, source: null, busy: false, job: null,
   stopped: false, error: "", controller: null, connected: false };
@@ -11,7 +11,8 @@ function copyLabel(selector, zh, en) {
   el.dataset.zh = zh; el.dataset.en = en; el.textContent = t(zh, en);
 }
 function installLiveUI() {
-  $(".metadata-inline > span:last-child").outerHTML = `<label><select id="subject-select" aria-label="Subject"><option value="maths" data-zh="數學" data-en="Maths">數學</option><option value="chinese" data-zh="中文" data-en="Chinese">中文</option><option value="english" data-zh="英文" data-en="English">英文</option></select></label><span data-zh="繁體中文介面" data-en="Traditional Chinese content">繁體中文介面</span>`;
+  $(".metadata-inline > span:last-child").outerHTML = `<label><select id="subject-select" aria-label="Subject"><option value="maths" data-zh="數學" data-en="Maths">數學</option></select></label><span data-zh="繁體中文介面" data-en="Traditional Chinese content">繁體中文介面</span>`;
+  document.body.insertAdjacentHTML('beforeend', `<dialog id="modify-dialog" class="dialog small-dialog"><div class="dialog-heading"><h2>修改這一題</h2><button class="icon-button" data-close aria-label="Close">${icon('close')}</button></div><p id="modify-original" class="dialog-intro"></p><label class="field"><span>你想怎樣修改？</span><textarea id="modify-instruction" rows="4" maxlength="2000" placeholder="例如：改成三個人分攤車費；加入分步填答；移除圖片"></textarea></label><p class="field-note">只修改目前程度的這一題，並更新答案及圖片。核心數學概念保持不變。</p><div class="dialog-footer"><button class="quiet" data-close>取消</button><button class="primary" id="submit-modification">套用修改</button></div></dialog>`);
   $(".file-line").insertAdjacentHTML("beforeend", `<button type="button" class="quiet" id="edit-source-button" data-action="edit-source" hidden data-zh="檢查內容" data-en="Check content">檢查內容</button>`);
   $("#import-notice").insertAdjacentHTML("afterend", `<p id="live-notice" class="import-notice live-notice" role="status" hidden></p>`);
   $(".setup-form .options-body").insertAdjacentHTML("beforeend", `<label class="checkbox-row" id="use-qwen-row"><input type="checkbox" id="use-qwen"/><span data-zh="用 Qwen 製作這份示範（需要金鑰）" data-en="Use Qwen on this sample (requires a key)">用 Qwen 製作這份示範（需要金鑰）</span></label>`);
@@ -27,7 +28,7 @@ function installLiveUI() {
 
 async function localAPI(path, data, { key = false, binary = false, signal } = {}) {
   if (browserMode) {
-    browserService ||= import(new URL('browser/entry.js?v=4.5', document.baseURI).href);
+    browserService ||= import(new URL('browser/entry.js?v=5.0', document.baseURI).href);
     let service;
     try { service = await browserService; }
     catch { browserService = null; throw new Error(t('文件工具未能載入，請重新整理網頁後再試。', 'Document tools could not load. Refresh the page and retry.')); }
@@ -77,6 +78,7 @@ function costApproval(quote) {
   $("#cost-message").textContent = quote.estimatedUsd === null
     ? t(`指定模型的價格未能估算。這次會使用 ${quote.models.join("、")}，共 ${quote.requests} 項操作。是否繼續？`, `Pricing is unknown for the selected model. This uses ${quote.models.join(", ")} for ${quote.requests} operation(s). Continue?`)
     : t(`估算預留約 US$${quote.estimatedUsd.toFixed(3)}，高於你設定的提示門檻。估算已包括可能的模型切換。`, `The allowance estimate is about US$${quote.estimatedUsd.toFixed(3)}, above your confirmation threshold. It includes possible model fallbacks.`);
+  if (quote.imagePossible) $("#cost-message").textContent += t(' 包括背景級別、分級檢查及最多一次重試；如有需要，另按題目生成插圖並檢查，每題最多一張。插圖及檢查費用未能準確估算，可能需數分鐘。', ' Includes hidden intermediate levels, audits and one retry. Up to one illustration per question plus visual review may be added. Image/review cost is unknown; this may take several minutes.');
   return new Promise(resolve => {
     const dialog = $("#cost-dialog");
     dialog.returnValue = "";
@@ -166,7 +168,7 @@ function sourceMarkup(source) {
   let previous = "";
   return `<p class="source-meta">小學${source.grade}年級${subjectText(source.subject)}科</p><h2>${esc(source.topic)}</h2>${source.context ? `<p class="source-context">${esc(source.context)}</p>` : ""}${source.questions.map((q, i) => {
     const heading = q.section !== previous ? `<p class="source-section">${esc(q.section)}</p>` : ""; previous = q.section;
-    return `${heading}<p class="source-written">${i + 1}. ${esc(q.prompt)}</p>${q.diagram ? diagramMarkup(q.diagram) : ""}`;
+    return `${heading}<p class="source-written">${esc(q.layout?.numberLabel || `${i+1}.`)} ${esc(q.prompt)}</p>${q.diagram ? diagramMarkup(q.diagram) : ""}${pictureMarkup(q)}${layoutMarkup(q)}`;
   }).join("")}`;
 }
 function renderLiveSource() {
@@ -189,7 +191,7 @@ function renderLiveImport() {
 function sampleSource() {
   return { topic: $("#topic").value || "分數比較", objective: $("#objective").value || originalObjective,
     grade: Number($("#grade-select").value), subject: $("#subject-select").value, summary: "", context: "", notices: [],
-    questions: samplePairs[4].map((pair, i) => ({ id: `q${i+1}`, section: ["在 ○ 內填上 ＞、＜ 或 ＝。", "在 ○ 內填上 ＞、＜ 或 ＝。", "觀察圖像，再比較大小。", "列式比較，並解釋方法。", "列式比較，並解釋方法。", "生活情境題。"][i], prompt: wording(pair, i, defaultPreset(4)), ...mathAnswer(pair, i), explanation: mathAnswer(pair, i).solution, hint: "", workLines: i < 2 ? 0 : 2, diagram: i === 2 ? { type: "fraction_bars", fractions: [[pair[0], pair[1]], [pair[2], pair[3]]], caption: "等長的整體" } : null })) };
+    questions: samplePairs[4].map((pair, i) => ({ id: `q${i+1}`, section: ["在 ○ 內填上 ＞、＜ 或 ＝。", "在 ○ 內填上 ＞、＜ 或 ＝。", "觀察圖像，再比較大小。", "列式比較。", "列式比較。", "生活情境題。"][i], prompt: wording(pair, i, defaultPreset(4)), ...mathAnswer(pair, i), explanation: mathAnswer(pair, i).solution, hint: "", workLines: i < 2 ? 0 : 2, diagram: i === 2 ? { type: "fraction_bars", fractions: [[pair[0], pair[1]], [pair[2], pair[3]]], caption: "等長的整體" } : null })) };
 }
 function confirmedSource() {
   const source = structuredClone(live.source || sampleSource());
@@ -208,7 +210,7 @@ async function analyzeUpload() {
   } catch (error) { report(error); }
 }
 function versionRecord(data) {
-  return { questions: data.questions, context: data.context, extension: data.extension,
+  return { questions: data.questions, context: data.context, extension: data.extension, columns:data.columns,header:data.header,footer:data.footer,
     edits: {}, answers: {}, approved: false, notices: data.notices || [] };
 }
 async function generateLive() {
@@ -232,29 +234,37 @@ function handleGenerate() {
   return false;
 }
 function diagramMarkup(diagram) {
+  if (diagram?.type === 'groups') return `<div class="exact-groups">${Array.from({length:diagram.groups},()=>`<span>${'○ '.repeat(diagram.count)}</span>`).join('')}</div>`;
   if (!diagram || diagram.type !== "fraction_bars") return "";
   return `<div class="fraction-bars">${diagram.fractions.map(([a, b]) => `<div class="bar-line"><span>${a}/${b}</span>${fractionBar(a, b)}</div>`).join("")}</div>`;
 }
+function layoutMarkup(q) {
+  const layout = q.layout || {}, table = layout.table || [];
+  return (table.length ? `<table class="source-table"><tbody>${table.map(row=>`<tr>${row.map(cell=>`<td>${esc(cell) || '&nbsp;'}</td>`).join('')}</tr>`).join('')}</tbody></table>` : '') +
+    (layout.answerStyle === 'boxes' ? `<div class="answer-boxes">${Array.from({length:layout.boxCount || 1},()=>'<span></span>').join('')}</div>` : layout.answerStyle === 'space' ? `<div style="min-height:${Math.max(1,q.workLines)*24}px"></div>` : Array.from({length:q.workLines},()=>'<div class="answer-space"></div>').join(''));
+}
+function pictureMarkup(q) { return (q.pictures || []).filter(p=>/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(p.data)).map(p=>`<img class="retained-picture" src="${p.data}" alt="${esc(p.caption)}"/>`).join(''); }
 function liveQuestion(q, i, version, extension = false) {
   const edited = Object.hasOwn(version.edits, i);
   const prompt = edited ? version.edits[i] : q.prompt;
-  return `<li class="worksheet-question" data-item="${i}"><span class="q-number">${extension ? "E1" : i + 1}.</span><span class="question-text" ${extension ? "" : `contenteditable="plaintext-only" role="textbox" data-edit="${i}" aria-label="${t("題目", "Question")} ${i+1}"`}>${esc(prompt)}</span>${!edited && q.diagram ? `<div class="question-visual">${diagramMarkup(q.diagram)}</div>` : ""}${!edited && q.hint ? `<p class="question-hint">${esc(q.hint)}</p>` : ""}${Array.from({ length: q.workLines }, () => '<div class="answer-space"></div>').join("")}${extension ? "" : `<button class="regenerate-button" data-regenerate="${i}" title="${t("重新製作這題", "Regenerate this question")}">${icon("refresh")}<span>${t("換一題", "Another question")}</span></button>`}</li>`;
+  return `<li class="worksheet-question ${q.layout?.bordered ? 'source-bordered' : ''}" data-item="${i}"><span class="q-number">${extension ? 'E1.' : esc(q.layout?.numberLabel || `${i+1}.`)}</span><span class="question-text" ${extension ? '' : `contenteditable="plaintext-only" role="textbox" data-edit="${i}" aria-label="${t('題目','Question')} ${i+1}"`}>${esc(prompt)}</span>${!edited ? `<div class="question-visual">${q.diagram ? diagramMarkup(q.diagram) : ''}${pictureMarkup(q)}</div>` : ''}${!edited && q.hint ? `<p class="question-hint">${esc(q.hint)}</p>` : ''}${layoutMarkup(q)}${extension ? '' : `<button class="regenerate-button" data-regenerate="${i}" title="修改要求">${icon('refresh')}<span>${t('修改這題','Modify question')}</span></button>`}</li>`;
 }
 function renderLiveWorksheet() {
   const p = state.project; if (!p?.live) return false;
   const v = p.versions[state.activeLevel], answerMode = state.doc === "answers";
   let content = `<header class="worksheet-heading"><div><p>小學${p.grade}年級${subjectText(p.subject)}科</p><h2>${esc(p.topic)}${answerMode ? " · 答案" : ""}</h2></div>${answerMode ? "" : '<div class="student-details"><span>姓名：＿＿＿＿＿＿</span><span>班別：＿＿＿　日期：＿＿＿</span></div>'}</header><div class="document-meta"><span>程度 ${state.activeLevel}</span><span>${v.questions.length} 題${v.extension ? " ＋ 延伸題" : ""}</span></div>`;
+  if (v.header) content = `<p class="source-header">${esc(v.header)}</p>` + content;
   if (v.context) content += `<div class="reading-passage">${esc(v.context)}</div>`;
   if (answerMode) {
     if (Object.keys(v.edits).length) content += '<p class="answer-warning">題目已修改，請檢查答案及解說。修改題目的舊圖解與提示不會匯出。</p>';
     content += v.questions.map((q, i) => `<div class="answer-item"><b>${i+1}.</b><div><span class="question-text" contenteditable="plaintext-only" role="textbox" data-answer-edit="${i}" aria-label="答案 ${i+1}">${esc(v.answers[i] ?? q.answer)}</span><small>${esc(q.explanation)}${Object.hasOwn(v.edits, i) ? "（修改前的解說，請核對）" : ""}</small></div></div>`).join("");
   } else {
     let current = null;
-    v.questions.forEach((q, i) => { if (current !== q.section) { if (current !== null) content += "</ol></section>"; content += `<section class="question-section"><h3>${esc(q.section)}</h3><ol class="worksheet-questions">`; current = q.section; } content += liveQuestion(q, i, v); });
+    v.questions.forEach((q, i) => { const group = `${q.section}:${q.layout?.page || 1}`; if (current !== group) { if (current !== null) content += "</ol></section>"; const pageBreak=i>0 && q.layout?.page !== v.questions[i-1].layout?.page; content += `<section class="question-section ${pageBreak ? 'source-page-break' : ''}"><h3>${esc(q.section)}</h3><ol class="worksheet-questions ${v.columns === 2 ? 'source-two-columns' : ''}">`; current = group; } content += liveQuestion(q, i, v); });
     content += "</ol></section>";
   }
   if (v.extension) content += `<section class="question-section extension-section"><h3>延伸挑戰</h3><p class="field-note">延伸目標：${esc(v.extension.objective)}</p>${answerMode ? `<div class="answer-item"><b>E1</b><div>${esc(v.extension.question.answer)}<small>${esc(v.extension.question.explanation)}</small></div></div>` : `<ol class="worksheet-questions">${liveQuestion(v.extension.question, 60, v, true)}</ol>`}</section>`;
-  content += '<footer class="worksheet-end"><span>分層工作紙生成 · 需老師檢查</span></footer>';
+  content += `<footer class="worksheet-end"><span>${esc(v.footer || '分層工作紙生成 · 需老師檢查')}</span></footer>`;
   $("#worksheet-page").innerHTML = content;
   return true;
 }
@@ -272,22 +282,30 @@ function reviewRendered() {
 }
 async function replaceQuestion(index) {
   const project = state.project, level = state.activeLevel, version = project.versions[level];
+  $('#modify-original').textContent = version.edits[index] ?? version.questions[index].prompt;
+  $('#modify-instruction').value = '';
+  const dialog = $('#modify-dialog'); dialog.returnValue = '';
+  const instruction = await new Promise(resolve => {
+    $('#submit-modification').onclick = () => { if (!$('#modify-instruction').value.trim()) return $('#modify-instruction').focus(); dialog.close('apply'); };
+    dialog.addEventListener('close',()=>resolve(dialog.returnValue === 'apply' ? $('#modify-instruction').value.trim() : ''),{once:true}); dialog.showModal(); $('#modify-instruction').focus();
+  });
+  if (!instruction) return;
   try {
     const source = effectiveWorksheet(); source.questions = [source.questions[index]];
-    const result = await runLive("replace", { source, levels: [level], baseline: project.source, presets: state.presets, extension: false });
+    const result = await runLive("replace", { source, instruction, levels: [level], baseline: level, presets: state.presets, extension: false });
     version.questions[index] = result.versions[level].questions[0]; delete version.edits[index]; delete version.answers[index]; version.approved = false;
-    project.modelUsage[level] = result.metadata[level]; persistProject(); renderReview();
+    version.notices = result.versions[level].notices; project.modelUsage[level] = result.metadata[level]; persistProject(); renderReview();
   } catch (error) { report(error); }
 }
 function effectiveWorksheet() {
   const p = state.project, v = p.versions[state.activeLevel];
   const questions = p.live ? v.questions.map((q, i) => ({ ...q, prompt: v.edits[i] ?? q.prompt, answer: v.answers[i] ?? q.answer,
-    ...(Object.hasOwn(v.edits, i) ? { explanation: "", diagram: null, hint: "" } : {}) }))
+    ...(Object.hasOwn(v.edits, i) ? { explanation: "", diagram: null, hint: "", pictures: [] } : {}) }))
     : v.pairs.map((pair, i) => ({ id: `q${i+1}`, section: sampleSource().questions[i].section, prompt: v.edits[i] ?? wording(pair, i, v.options), answer: v.answers[i] ?? mathAnswer(pair, i).answer,
       explanation: Object.hasOwn(v.edits, i) ? "" : mathAnswer(pair, i).solution,
       hint: !Object.hasOwn(v.edits, i) && (i >= 3 || i === 0) ? hintFor(pair, v.options) : "", workLines: i < 2 ? 0 : i === 2 ? 1 : 2,
       diagram: !Object.hasOwn(v.edits, i) && v.options.visuals && (i === 2 || (i === 0 && v.options.guidance >= 2)) ? { type: "fraction_bars", fractions: [[pair[0], pair[1]], [pair[2], pair[3]]], caption: "等長的整體" } : null }));
-  return { topic: p.topic, objective: p.objective, grade: p.grade, subject: p.subject || "maths", summary: p.notes || "", context: p.live ? v.context : "", questions, notices: [] };
+  return { topic: p.topic, objective: p.objective, grade: p.grade, subject: p.subject || "maths", summary: p.notes || "", context: p.live ? v.context : "", columns:v.columns || 1,header:v.header || '',footer:v.footer || '', questions, notices: [] };
 }
 async function downloadWord(mode) {
   if (!state.project?.versions[state.activeLevel].approved) return;
@@ -318,13 +336,13 @@ function afterTranslate() {
   copyLabel("#settings-dialog .dialog-intro", "文件理解及題目調整使用同一個模型服務金鑰。精確數學圖解由本機繪製。", "Document reading and question adaptation use the same model-service key. Exact maths diagrams are drawn locally.");
   copyLabel("#settings-dialog .field > small", "金鑰不會儲存到磁碟。只有讀取、製作或測試時才送交Qwen 服務。", "The key is not saved to disk. It is sent to Qwen service only when reading, generating or testing.");
   copyLabel("#settings-dialog .region-note", "預設 Qwen 國際服務（新加坡）· 可自訂 API Host", "Default: Qwen International (Singapore) · Custom API Host supported");
-  copyLabel("#settings-dialog .options-body > small", "圖片生成未接駁：目前只接駁文字及視覺理解模型。", "Image generation is not connected yet; language and vision models are supported.");
+  copyLabel("#settings-dialog .options-body > small", "文字、視覺閱讀及線條插圖共用 API Key；精確數學圖解由程式繪製。", "One API key for language, vision and line illustrations; exact maths diagrams are program-drawn.");
   copyLabel("#settings-dialog .service-list > div:last-child > span", "精確數學圖解", "Exact maths diagrams");
   $("#settings-dialog .service-list > div:last-child small").textContent = t("本機", "Local");
-  const imageSelect = $("[data-model='image']"); if (imageSelect) { imageSelect.disabled = true; imageSelect.innerHTML = `<option>${t("圖片生成未接駁", "Image generation deferred")}</option>`; $("[data-model-id='image']").hidden = true; }
+  const imageSelect = $("[data-model='image']"); if (imageSelect) imageSelect.disabled = false;
   $("#workspace-id").placeholder = t("貼上 API Host 或 API URL", "Paste an API Host or API URL");
   copyLabel("#about-dialog h2", "分層工作紙生成", "Differentiated worksheet generator");
-  copyLabel("#about-dialog .dialog-intro", "可上載 PDF、Word 或圖片，透過Qwen 讀取及改編工作紙，並匯出可編輯的 Word。沒有金鑰也可使用分數示範。內容及難度尚需老師核對，未經官方課程校準。圖片生成、音訊及影片仍未接駁。", "Upload PDF, Word or images, use Qwen to read and adapt them, and export editable Word documents. The fraction demo works without a key. Teachers must review content and difficulty; formal curriculum calibration, generated illustrations, audio and video are not connected.");
+  copyLabel("#about-dialog .dialog-intro", "數學原型：逐級調整工作紙，保留框格、表格及相關圖片，支援單題修改要求和線條插圖。可匯出可編輯 Word。複雜排版、圖片、答案及程度需老師核對；未經課堂校準。", "Maths prototype: adjacent-level adaptation, source boxes/tables/pictures, question-specific requests and line illustrations. Editable Word export. Teachers must check complex layouts, images, answers and difficulty; not classroom-calibrated.");
   $("#use-qwen").checked = state.imported ? false : $("#use-qwen").checked;
   syncSetup(); reviewRendered();
 }

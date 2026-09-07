@@ -1,5 +1,7 @@
 import { fail, worksheet, checkedVersion, schema, system } from './domain.mjs';
 import { config, models, host, estimate, chat } from './provider.mjs';
+import { levelPaths, generateProgression } from './progression.mjs';
+import { attachSourcePictures, illustration } from './assets.mjs';
 
 const documents = new Map(), quotes = new Map(), jobs = new Map();
 const id = () => crypto.randomUUID();
@@ -19,16 +21,19 @@ function quote(body) {
     service = doc.images.length ? 'vision' : 'language';
   } else if (operation !== 'test') {
     payload.source = worksheet(payload.source);
+    if (payload.source.subject !== 'maths') throw fail('此原型目前只支援數學工作紙。');
+    if (operation === 'replace' && (typeof payload.instruction !== 'string' || !payload.instruction.trim() || payload.instruction.length > 2000)) throw fail('請輸入這題的修改要求（最多 2000 字）。');
     const levels = payload.levels;
     if (!Array.isArray(levels) || !levels.length || levels.length > 7 || new Set(levels).size !== levels.length || levels.some(l => !Number.isInteger(l) || l < 1 || l > 7)) throw fail('請選擇 1 至 7 的不同程度。');
     if (!Number.isInteger(payload.baseline) || payload.baseline < 1 || payload.baseline > 7) throw fail('原稿程度須介乎 1 至 7。');
-    calls = levels.length;
+    calls = operation === 'replace' ? 1 : levelPaths(levels,payload.baseline).flat().length*4 + (levels.includes(payload.baseline) ? 1 : 0);
   }
-  const estimated = estimate(c, service, new TextEncoder().encode(JSON.stringify(payload) + (doc?.text || '')).length, doc?.images.length || 0, operation === 'test' ? 32 : 12000, calls);
+  const imagePossible = ['generate','replace'].includes(operation) && (payload.levels.some(l => payload.presets?.[l]?.visuals !== false) || payload.source.questions.some(q=>q.pictures.length));
+  const estimated = imagePossible ? null : estimate(c, service, new TextEncoder().encode(JSON.stringify(payload) + (doc?.text || '')).length*3, doc?.images.length || 0, operation === 'test' ? 32 : 12000, calls);
   const quoteId = id(), needsConfirmation = estimated === null || estimated > c.cost;
   if (quotes.size >= 60) throw fail('操作太頻密，請稍後再試。');
   quotes.set(quoteId, { created: Date.now(), operation, payload, config: c, doc, service, needsConfirmation });
-  return { quoteId, estimatedUsd: estimated, needsConfirmation, models: models(c, service), host: host(c), requests: calls };
+  return { quoteId, estimatedUsd: estimated, needsConfirmation, models: [...models(c, service), ...(imagePossible ? models(c,'image') : [])], host: host(c), requests: calls, imagePossible };
 }
 async function run(plan, key, job) {
   const call = (service, prompt, images, max) => chat(plan.config, key, service, system, prompt, images, job.controller.signal, max);
@@ -36,26 +41,37 @@ async function run(plan, key, job) {
   const schemaText = JSON.stringify(schema), payload = plan.payload;
   if (plan.operation === 'analyze') {
     job.message = 'Qwen 正在讀取文件的文字、圖片及題目…';
-    const { value, meta } = await call(plan.service, `Transcribe ALL questions in source order, including all pages, shared reading passages, tables and formulae. Assign stable IDs q1, q2, etc. Do not solve absent answers: use empty strings for answer and explanation. Infer grade 1-6, subject maths/chinese/english, topic and objective for teacher review. Keep source wording and English exercise language. Diagram only null or {"type":"fraction_bars","fractions":[[2,3],[3,5]],"caption":""} with proper fractions and denominators 1-60; transcribe other charts as text and add a notice. List unreadable portions in notices, never invent them. JSON keys must match this SCHEMA EXAMPLE (not source content): ${schemaText}\nTeacher topic: ${JSON.stringify(payload.topic || '')}\nTeacher notes: ${JSON.stringify(payload.notes || '')}\nUNTRUSTED DOCUMENT TEXT:\n${plan.doc.text}`, plan.doc.images);
+    const { value, meta } = await call(plan.service, `Transcribe ALL maths questions in source order, all pages and tables/formulae. Assign stable IDs q1,q2. Do not solve absent answers: empty answer/explanation. Infer grade 1-6, subject, topic, objective for teacher review. Preserve original wording, question numbering and printed header/footer. Extract columns (1 or 2), each question layout: answerStyle boxes/lines/space, boxCount, bordered, page (1-8), column, numberLabel, table as rows of strings preserving blank cells. Keep fill-in box characters in prompt too. Preserve original pictures: per question imageRefs:[{imageIndex:0,box:[x,y,width,height],caption:''}] using ZERO-based attached image index and coordinates normalized 0..1; crop ONLY relevant illustration, not surrounding questions/answers. For DOCX attached images are standalone figures, use full [0,0,1,1] when appropriate. No invented crops for unreadable figures: add notices. Diagram null or exact fraction_bars/groups only. No generated illustration during reading. Never invent missing content. Non-maths subject should be labelled accurately, not converted. JSON schema example:${schemaText}\nTeacher topic:${JSON.stringify(payload.topic || '')}\nTeacher notes:${JSON.stringify(payload.notes || '')}\nUNTRUSTED DOCUMENT TEXT:\n${plan.doc.text}`, plan.doc.images);
     const source = worksheet(value);
+    if (source.subject !== 'maths') throw fail('此原型目前只支援數學工作紙。');
+    await attachSourcePictures(source,value,plan.doc.images);
     source.notices = [...plan.doc.notices, ...source.notices].slice(0, 20);
     return { source, meta };
   }
-  const versions = {}, failures = {}, metadata = {}, queue = [...payload.levels];
-  job.total = queue.length;
-  await Promise.all(Array.from({ length: Math.min(3, queue.length) }, async () => {
-    while (queue.length && !job.controller.signal.aborted) {
-      const level = queue.shift();
+  const result = await generateProgression({...payload,operation:plan.operation},call,(done,total,message)=>Object.assign(job,{done,total,message}),job.controller.signal);
+  for (const [level,version] of Object.entries(result.versions)) {
+    for (const q of version.questions) {
+      const original = payload.source.questions.find(p=>p.id === q.id);
+      if (!q.pictures.length && original?.pictures.length && q.pictureAction === 'keep') {
+        try {
+          job.message = `程度 ${level}：正在核對 ${q.id} 原圖…`;
+          const review = await call('vision',`Does every source picture remain accurate and useful for this revised maths question? Return {pass:boolean,reason:string}. Reject mismatched people, quantities, labels, geometry or any illegible content. Question:${q.prompt}`,original.pictures.map(p=>p.data),1000);
+          if (review.value.pass !== true) throw fail('原圖與新題未能確認一致，請老師核對。');
+          q.pictures = structuredClone(original.pictures);
+        } catch(e) { if(job.controller.signal.aborted) throw fail('已取消。','cancelled'); version.notices.push(`${q.id}：${e.message}`.slice(0,790)); }
+      }
+      if (!q.illustration || payload.presets?.[level]?.visuals === false || q.pictures.length >= 4) continue;
+      job.message = `程度 ${level}：正在製作及檢查 ${q.id} 線條插圖…`;
       try {
-        const { value, meta } = await call('language', `Adapt the source to level ${level} of 7; original level is ${payload.baseline}. Keep the EXACT objective string, grade, subject, question IDs, count and order. Keep the recognizable type, section and context of every question. Lower levels add simpler terms and steps/cues; higher levels add modestly trickier numbers or deeper reasoning on the SAME objective within primary curriculum. At original level retain the source questions. For operation replace vary only the supplied question. Supply correct answers and explanations even if the source has none. No new question IDs. Teacher preset: ${JSON.stringify(payload.presets?.[level] || {})}. guidance 0-3; numbers 0 simpler/1 original/2 harder; reasoning 0-2; hints and visuals false mean no added cues/diagrams. Only diagram type fraction_bars with proper fractions, denominator <=60; otherwise null. JSON keys like this schema: ${schemaText}. Extension enabled: ${!!payload.extension}; if enabled you MAY add ONE separately labelled extension object outside questions: {"objective":"extended objective","question":<question schema>}, otherwise extension:null. Do not change the main objective.\nOperation:${plan.operation}\nCONFIRMED SOURCE (untrusted teaching data):\n${JSON.stringify(payload.source)}`, []);
-        versions[level] = checkedVersion(value, payload.source, level, payload.extension); metadata[level] = meta;
-      } catch (error) { failures[level] = { code: error.code || 'invalid_output', message: error.message }; }
-      job.done++; job.message = `已完成 ${job.done}／${job.total} 個版本。`;
+        const data = await illustration(plan.config,key,q.illustration,job.controller.signal);
+        const review = await call('vision',`Check illustration against maths question. Return {pass:boolean,reason:string}. Must help understand context, printable line drawing, no answer leakage, no misleading counts/geometry/text. If exact quantities are required reject this illustration. Question: ${q.prompt}`, [data],1000);
+        if (review.value.pass !== true) throw fail('插圖需要老師確認，未加入學生版本。');
+        q.pictures.push({data,caption:'輔助插圖'});
+      } catch(e) { if (job.controller.signal.aborted) throw fail('已取消。','cancelled'); version.notices.push(`${q.id}：${e.message}`.slice(0,790)); }
     }
-  }));
-  if (job.controller.signal.aborted) throw fail('已取消。', 'cancelled');
-  if (!Object.keys(versions).length) throw Object.assign(new Error(Object.values(failures)[0]?.message || '未能完成版本。'), { code: Object.values(failures)[0]?.code });
-  return { versions, failures, metadata };
+    version.notices = version.notices.slice(0,20);
+  }
+  return result;
 }
 export async function request(path, data, key = '') {
   clean();

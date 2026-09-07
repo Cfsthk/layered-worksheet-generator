@@ -10,7 +10,7 @@ const range = (length) => Array.from({ length }, (_, i) => i + 1);
 const zhNumbers = ["", "一", "二", "三", "四", "五", "六", "七"];
 const levelNames = ["", "充分引導", "分步提示", "適量支援", "原稿程度", "自主應用", "深入思考", "進階挑戰"];
 const levelNamesEn = ["", "Fully guided", "Step by step", "Supported", "Original", "Independent", "Deeper thinking", "Challenge"];
-const originalObjective = "比較異分母分數的大小，並解釋比較方法。";
+const originalObjective = "比較異分母分數的大小。";
 const samplePairs = {
   1: [[1,2,1,4],[1,3,1,6],[3,4,5,8],[3,4,2,3],[2,5,1,2],[3,4,1,2]],
   2: [[2,3,1,2],[3,5,1,2],[3,4,5,8],[5,6,3,4],[4,7,1,2],[3,4,5,8]],
@@ -22,7 +22,8 @@ const samplePairs = {
 };
 const rerollPairs = [[5,6,7,9],[4,5,7,10],[3,8,2,5],[5,12,4,9],[7,8,5,6],[11,15,3,4]];
 function readStorage(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } }
-function defaultPreset(level) { return { guidance: level < 3 ? 3 : level === 3 ? 2 : level === 4 ? 1 : 0, numbers: level < 4 ? 0 : level === 4 ? 1 : 2, reasoning: level < 4 ? 0 : level < 6 ? 1 : 2, hints: level < 4, visuals: level < 5 }; }
+const levelTargets = ['', '簡化語句及數值，提供不同答案的類似例題、具體圖示和逐步填答。', '分拆計算步驟，提供中間填答框及有用圖示，不直接展示完整解法。', '盡量保留原題，只加一個針對性提示。', '保留原稿題目、格式及核心概念。', '增加一項條件或相依計算，不只是換數字。', '增加人物、數量關係或清楚界定的時段，比第五級多一層計算。', '整合更多相依條件或求未知量；保留原概念，不加入解釋理由題。'];
+function defaultPreset(level) { return { target:levelTargets[level], guidance: level === 1 ? 3 : level === 2 ? 2 : level === 3 ? 1 : 0, numbers: level < 4 ? 0 : level === 4 ? 1 : 2, reasoning: level < 4 ? 0 : level < 6 ? 1 : 2, hints: level < 4, visuals: level < 3 }; }
 const storedPreferences = readStorage(PREFS, {});
 const state = {
   view: "home", lang: storedPreferences.lang === "en" ? "en" : "zh", example: 1,
@@ -94,7 +95,7 @@ function renderExample(animate = true) {
   $$('[data-example]').forEach(el => { const active = Number(el.dataset.example) === n; el.classList.toggle("active", active); el.setAttribute("aria-pressed", active); });
 }
 function sourceHTML(grade = 4, topic = "分數比較") {
-  return `<p class="source-meta">小學${zhNumbers[grade] || "四"}年級數學科</p><h2>${esc(topic)}</h2><p class="source-section">一、在 ○ 內填上 ＞、＜ 或 ＝。</p><div class="source-pairs">${samplePairs[4].slice(0,2).map((p,i)=>`<div class="source-pair"><span>${i+1}.</span>${fraction(p[0],p[1])}<span class="compare-circle">○</span>${fraction(p[2],p[3])}</div>`).join("")}</div><p class="source-section">二、觀察圖像，再比較大小。</p><p class="source-written">3. 比較 3/4 和 5/8。</p>${bars([3,4,5,8])}<p class="source-section">三、列式比較，並解釋方法。</p><p class="source-written">4. 比較 7/10 和 2/3。</p><div class="source-line"></div><p class="source-written">5. 比較 4/9 和 5/12。</p><div class="source-line"></div><p class="source-section">四、生活情境題。</p><p class="source-written">6. 家明用了 3/4 米絲帶，美儀用了 5/8 米。誰用得較多？解釋你的答案。</p><div class="source-line"></div>`;
+  return `<p class="source-meta">小學${zhNumbers[grade] || "四"}年級數學科</p><h2>${esc(topic)}</h2><p class="source-section">一、在 ○ 內填上 ＞、＜ 或 ＝。</p><div class="source-pairs">${samplePairs[4].slice(0,2).map((p,i)=>`<div class="source-pair"><span>${i+1}.</span>${fraction(p[0],p[1])}<span class="compare-circle">○</span>${fraction(p[2],p[3])}</div>`).join("")}</div><p class="source-section">二、觀察圖像，再比較大小。</p><p class="source-written">3. 比較 3/4 和 5/8。</p>${bars([3,4,5,8])}<p class="source-section">三、列式比較。</p><p class="source-written">4. 比較 7/10 和 2/3。</p><div class="source-line"></div><p class="source-written">5. 比較 4/9 和 5/12。</p><div class="source-line"></div><p class="source-section">四、生活情境題。</p><p class="source-written">6. 家明用了 3/4 米絲帶，美儀用了 5/8 米。誰用得較多？寫出答案。</p><div class="source-line"></div>`;
 }
 function renderSource() {
   if (window.SevenLive?.renderSource()) return;
@@ -136,11 +137,12 @@ function renderPresets() {
   const controls = [
     ["guidance",t("引導步驟", "Guided steps"),3,t("從獨立作答，到逐步引導。", "From independent work to guided steps.")],
     ["numbers",t("數字複雜度", "Number complexity"),2,t("較簡單、跟隨原稿，或較複雜。", "Simpler, original, or more complex values.")],
-    ["reasoning",t("解釋與思考", "Explanation and reasoning"),2,t("調整提示方式與需要解釋的程度。", "Adjust how much explanation each question asks for.")]
+    ["reasoning",t("計算結構", "Calculation structure"),2,t("增加條件及相依計算步驟，不要求解釋理由。", "Add conditions and dependent calculation steps, not written explanations.")]
   ];
-  $("#preset-detail").innerHTML = controls.map(([key,label,max,note])=>`<label class="preset-line"><span>${label}<output id="${key}-output">${presetLabel(key,preset[key])}</output></span><input type="range" min="0" max="${max}" step="1" value="${preset[key]}" data-preset-value="${key}" aria-label="${label}"/><small>${note}</small></label>`).join("") + `<div class="preset-checks"><label class="checkbox-row"><input type="checkbox" data-preset-check="hints" ${preset.hints?"checked":""}/><span>${t("加入提示", "Add hints")}</span></label><label class="checkbox-row"><input type="checkbox" data-preset-check="visuals" ${preset.visuals?"checked":""}/><span>${t("加入圖解", "Add diagrams")}</span></label></div><p class="preset-explanation">${t("調整套用於下一次示範製作。七級難度仍有待課堂校準。", "Changes apply to the next demo generation. The seven levels still need classroom calibration.")}</p>`;
+  $("#preset-detail").innerHTML = controls.map(([key,label,max,note])=>`<label class="preset-line"><span>${label}<output id="${key}-output">${presetLabel(key,preset[key])}</output></span><input type="range" min="0" max="${max}" step="1" value="${preset[key]}" data-preset-value="${key}" aria-label="${label}"/><small>${note}</small></label>`).join("") + `<div class="preset-checks"><label class="checkbox-row"><input type="checkbox" data-preset-check="hints" ${preset.hints?"checked":""}/><span>${t("加入提示", "Add hints")}</span></label><label class="checkbox-row"><input type="checkbox" data-preset-check="visuals" ${preset.visuals?"checked":""}/><span>${t("加入圖解", "Add diagrams")}</span></label></div><p class="preset-explanation">${t("調整套用於下次製作；逐級檢查差異，仍需老師核對。", "Changes apply to the next generation; adjacent levels are checked. Teacher review is still required.")}</p>`;
+  $("#preset-detail").insertAdjacentHTML("afterbegin", `<label class="field"><span>${t("這級的具體要求", "Level requirements")}</span><textarea id="preset-target" rows="3" maxlength="1000">${esc(preset.target || levelTargets[n])}</textarea></label>`);
 }
-function presetLabel(key,value) { const labels=key==="guidance" ? [["沒有", "None"],["少量", "Light"],["適量", "Some"],["逐步引導", "Step by step"]] : key==="numbers" ? [["較簡單", "Simpler"],["原稿", "Original"],["較複雜", "More complex"]] : [["基本", "Basic"],["說明方法", "Explain method"],["深入解釋", "Explain reasoning"]]; return t(...labels[clamp(value,0,labels.length-1)]); }
+function presetLabel(key,value) { const labels=key==="guidance" ? [["沒有", "None"],["少量", "Light"],["適量", "Some"],["逐步引導", "Step by step"]] : key==="numbers" ? [["較簡單", "Simpler"],["原稿", "Original"],["較複雜", "More complex"]] : [["基本", "Basic"],["多一步計算", "Additional step"],["多項條件", "Multiple conditions"]]; return t(...labels[clamp(value,0,labels.length-1)]); }
 function renderModels() {
   $("#model-options").innerHTML = [["vision",t("文件閱讀", "Document reading")],["language",t("題目與推理", "Questions & reasoning")],["image",t("插圖", "Illustrations")]].map(([key,label])=>`<label class="model-option"><span>${label}</span><select data-model="${key}" aria-label="${label}"><option value="auto" ${!state.models[key]?"selected":""}>${t("自動選擇", "Automatic")}</option><option value="custom" ${state.models[key]?"selected":""}>${t("指定模型", "Custom model")}</option></select><input data-model-id="${key}" aria-label="${label} Model ID" placeholder="Model ID" value="${esc(state.models[key])}" ${state.models[key]?"":"hidden"}/></label>`).join("");
 }
@@ -163,9 +165,8 @@ function wording(pair,index,options) {
   const [a,b,c,d]=pair, left=`${a}/${b}`, right=`${c}/${d}`;
   if(index<2)return `${left}　○　${right}`;
   if(index===2)return `比較 ${left} 和 ${right}，在 ○ 內填上 ＞、＜ 或 ＝。`;
-  if(index===5)return `家明用了 ${left} 米絲帶，美儀用了 ${right} 米。誰用得較多？${options.reasoning===2?"列式比較，並解釋為甚麼不能只看分子。":"解釋你的答案。"}`;
-  if(options.reasoning===2 && index===4)return `有同學說：「比較分數，只要看分子就足夠。」以 ${left} 和 ${right} 為例，指出這個說法的問題，再作出正確比較。`;
-  return `比較 ${left} 和 ${right}。${options.reasoning===0?"圈出較大的分數。":options.reasoning===1?"寫出通分步驟，並解釋你的方法。":"寫出比較方法，並說明為甚麼這個方法有效。"}`;
+  if(index===5)return `家明用了 ${left} 米絲帶，美儀用了 ${right} 米。誰用得較多？`;
+  return `比較 ${left} 和 ${right}，圈出較大的分數。`;
 }
 function createVersion(level) {
   const effective=clamp(4+level-state.baseline,1,7);
@@ -220,7 +221,7 @@ function renderWorksheet() {
       return `<div class="answer-item"><b>${i+1}.</b><div><span contenteditable="plaintext-only" class="question-text" role="textbox" aria-label="答案 ${i+1}" data-answer-edit="${i}">${esc(v.answers[i]??result.answer)}</span><small>${esc(result.solution)}${Object.hasOwn(v.edits,i)?"（按修改前數值計算）":""}</small></div></div>`;
     }).join("");
   }else{
-    content=`<section class="question-section"><h3><span>一</span>在 ○ 內填上 ＞、＜ 或 ＝。</h3><ol class="worksheet-questions inline">${questionHTML(v,0)}${questionHTML(v,1)}</ol></section><section class="question-section"><h3><span>二</span>${v.options.visuals?"觀察圖像，再比較大小。":"比較分數，並寫出答案。"}</h3><ol class="worksheet-questions">${questionHTML(v,2)}</ol></section><section class="question-section"><h3><span>三</span>列式比較，並解釋方法。</h3><ol class="worksheet-questions">${questionHTML(v,3)}${questionHTML(v,4)}</ol></section><section class="question-section"><h3><span>四</span>生活情境題。</h3><ol class="worksheet-questions">${questionHTML(v,5)}</ol></section>`;
+    content=`<section class="question-section"><h3><span>一</span>在 ○ 內填上 ＞、＜ 或 ＝。</h3><ol class="worksheet-questions inline">${questionHTML(v,0)}${questionHTML(v,1)}</ol></section><section class="question-section"><h3><span>二</span>${v.options.visuals?"觀察圖像，再比較大小。":"比較分數，並寫出答案。"}</h3><ol class="worksheet-questions">${questionHTML(v,2)}</ol></section><section class="question-section"><h3><span>三</span>列式比較。</h3><ol class="worksheet-questions">${questionHTML(v,3)}${questionHTML(v,4)}</ol></section><section class="question-section"><h3><span>四</span>生活情境題。</h3><ol class="worksheet-questions">${questionHTML(v,5)}</ol></section>`;
   }
   $("#worksheet-page").innerHTML=header+content+'<footer class="worksheet-end"><span>分層工作紙生成 · 示範工作紙</span><span>1</span></footer>';
 }
@@ -314,6 +315,7 @@ document.addEventListener("input",e=>{
   const el=e.target;
   if(el.hasAttribute("data-edit")||el.hasAttribute("data-answer-edit")){handleEdit(el);return;}
   if(el.dataset.presetValue){const key=el.dataset.presetValue;state.presets[state.preset][key]=Number(el.value);$(`#${key}-output`).textContent=presetLabel(key,Number(el.value));}
+  if(el.id === 'preset-target') state.presets[state.preset].target = el.value;
   if(el.dataset.modelId){state.models[el.dataset.modelId]=el.value.trim();}
   if(el.id==="workspace-id")syncEndpoint();
   if(el.id==="topic")renderSource();
