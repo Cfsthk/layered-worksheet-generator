@@ -55,8 +55,8 @@ def parse_document(name, encoded):
     if not isinstance(name, str) or len(name) > 240 or not isinstance(encoded, str):
         raise AppError("檔案資料格式錯誤。")
     extension = Path(name).suffix.lower()
-    if extension not in {".pdf", ".docx", ".png", ".jpg", ".jpeg", ".heic"}:
-        raise AppError("支援 PDF、DOCX、JPG、PNG 或 HEIC。", "invalid_file")
+    if extension not in {".pdf", ".doc", ".docx", ".png", ".jpg", ".jpeg", ".heic"}:
+        raise AppError("支援 DOC、DOCX、PDF、JPG、JPEG、PNG 或 HEIC。", "invalid_file")
     try:
         raw = base64.b64decode(encoded, validate=True)
     except (ValueError, TypeError):
@@ -64,6 +64,28 @@ def parse_document(name, encoded):
     if not raw or len(raw) > MAX_FILE:
         raise AppError("請選擇不超過 15 MB 的檔案。", "file_too_large", 413)
     result = {"fileName": name, "text": "", "images": [], "pages": 1, "notices": []}
+    if extension == ".doc":
+        if raw.startswith(b"PK"):
+            converted = parse_document(name + "x", encoded)
+        else:
+            converter = shutil.which("textutil")
+            if not converter:
+                raise AppError("請使用網頁版讀取 DOC，或先用 Word 另存為 DOCX。", "dependency_missing", 503)
+            if not raw.startswith(bytes.fromhex("d0cf11e0a1b11ae1")):
+                raise AppError("這不是有效的 Word DOC 文件。", "invalid_file")
+            try:
+                with tempfile.TemporaryDirectory(prefix="worksheet-doc-") as folder:
+                    source, target = Path(folder) / "source.doc", Path(folder) / "converted.docx"
+                    source.write_bytes(raw)
+                    process = subprocess.run([converter, "-convert", "docx", "-output", str(target), str(source)], capture_output=True, timeout=25)
+                    if process.returncode or not target.exists():
+                        raise AppError("DOC 損壞或受保護，請另存為 DOCX。", "invalid_file")
+                    converted = parse_document(name + "x", base64.b64encode(target.read_bytes()).decode())
+            except subprocess.TimeoutExpired:
+                raise AppError("DOC 轉換逾時，請另存為 DOCX。", "invalid_file") from None
+        converted["fileName"] = name
+        converted["notices"].append("舊版 DOC 已轉換；請核對公式及圖形，必要時改用 PDF。")
+        return converted
     if extension == ".docx":
         try:
             with zipfile.ZipFile(io.BytesIO(raw)) as archive:

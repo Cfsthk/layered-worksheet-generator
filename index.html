@@ -68,7 +68,7 @@
       <div class="review-bottom"><label class="checkbox-row"><input type="checkbox" id="review-approved" /><span data-zh="已檢查這個版本的題目及答案" data-en="I have reviewed this version and its answers">已檢查這個版本的題目及答案</span></label><span id="review-status" class="field-note"></span></div>
     </section>
   </main>
-  <input id="file-input" type="file" accept=".pdf,.docx,.png,.jpg,.jpeg,.heic" hidden />
+  <input id="file-input" type="file" accept=".doc,.docx,.pdf,.jpg,.jpeg,.png,.heic" hidden />
 
   <dialog id="settings-dialog" class="dialog settings-dialog">
     <div class="dialog-heading"><div><p class="eyebrow" data-zh="模型連線" data-en="MODEL CONNECTION">模型連線</p><h2 data-zh="一次連接，三種能力。" data-en="One connection. Three capabilities.">一次連接，三種能力。</h2></div><button class="icon-button" data-close aria-label="Close"><svg><use href="#i-close"/></svg></button></div>
@@ -83,7 +83,7 @@
   <dialog id="about-dialog" class="dialog small-dialog"><div class="dialog-heading"><h2 data-zh="這是可操作的設計原型" data-en="An interactive design prototype">這是可操作的設計原型</h2><button class="icon-button" data-close aria-label="Close"><svg><use href="#i-close"/></svg></button></div><p class="dialog-intro" data-zh="你可以選擇程度、修改示範題目、儲存工作紙及列印 PDF。上載解析、Qwen 生成、課程校準與 Word 匯出仍待接駁；畫面中的題目使用預先準備的分數示範。" data-en="Choose levels, edit sample questions, save worksheets locally and print to PDF. Upload parsing, Qwen generation, curriculum calibration and Word export are not connected yet. The questions use prepared fraction examples.">你可以選擇程度、修改示範題目、儲存工作紙及列印 PDF。上載解析、Qwen 生成、課程校準與 Word 匯出仍待接駁；畫面中的題目使用預先準備的分數示範。</p><button class="primary" data-close data-zh="知道了" data-en="Got it">知道了</button></dialog>
   <dialog id="progress-dialog" class="dialog progress-dialog"><div class="progress-document" aria-hidden="true"><svg><use href="#i-file"/></svg><span></span></div><p class="eyebrow" data-zh="示範製作中" data-en="PREPARING DEMO VERSIONS">示範製作中</p><h2 id="progress-label">正在整理你的版本…</h2><div class="progress-track"><span id="progress-bar"></span></div><p class="field-note" data-zh="保留題目順序與學習目標" data-en="Keeping the question order and objective">保留題目順序與學習目標</p><button class="quiet" data-action="cancel" data-zh="取消" data-en="Cancel">取消</button></dialog>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="app.js"></script>
-  <script src="live.js"></script>
+  <script src="app.js?v=4.1"></script>
+  <script src="live.js?v=4.1"></script>
 </body>
 </html>

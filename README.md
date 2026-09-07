@@ -1,21 +1,21 @@
-# 分層工作紙生成：本機工作紙工具
+# 分層工作紙生成
 
 上載工作紙、確認學習目標、選擇程度，再檢查及下載。介面預設繁體中文，可切換英文。你可以處理小一至小六的數學、中文及英文工作紙；英文練習保留英文內容。
 
 ## 開啟
 
-雙擊 `start.command`，或在這個資料夾執行 `./start.command`。然後開啟 [本機應用程式](http://127.0.0.1:4173/)。保留終端機視窗；按 Ctrl+C 結束服務。
+直接開啟 [分層工作紙生成](https://cfsthk.github.io/layered-worksheet-generator/)。網頁版支援上載、Qwen 讀取、分層生成及 Word 下載，不需要啟動本機服務。
 
-不要使用 `python -m http.server` 或直接開啟 HTML，這些方式不會啟動文件處理及 Qwen 接駁。這部 Mac 已備有需要的執行環境；另一部電腦需要 Python 3.10+、`requirements.txt` 的套件及 Poppler（`pdfinfo`、`pdftoppm`）。HEIC 使用 macOS 的 `sips`。
+亦可雙擊 `start.command`，或執行 `./start.command` 開啟 [本機版](http://127.0.0.1:4173/)。本機版使用 Python 3.10+、`requirements.txt` 套件及 Poppler（`pdfinfo`、`pdftoppm`）；macOS 以 `textutil` 轉換舊版 DOC，以 `sips` 轉換 HEIC。
 
-這個公開版本是本機工具：文件讀取、Word 匯出及 Qwen 接駁由 `serve.py` 提供。GitHub Pages 只能顯示靜態介面，不能代替這個本機服務；請勿把 API Key 放入程式碼或公開檔案。
+網頁版在瀏覽器準備文件，直接以使用者的金鑰連接官方香港 Qwen 端點。PDF（包括掃描件）逐頁轉成圖片；JPG、JPEG、PNG 直接作為圖片；DOC、DOCX 擷取文字及可讀內嵌圖片，再由 Qwen 整理題目與目標。有圖片時使用所選視覺模型，純文字文件使用所選文字模型。這符合 Qwen 的[多圖片輸入介面](https://www.alibabacloud.com/help/en/model-studio/vision)。
 
-GitHub Pages 靜態示範：[分層工作紙生成](https://cfsthk.github.io/layered-worksheet-generator/)。示範工作紙可在瀏覽器中預覽；上載、Qwen 連線及 Word 匯出請依照上面的本機步驟執行。
+瀏覽器文件工具隨網站發佈，沒有第三方文件轉換服務。API Key 只用於當次模型請求，不包含在程式碼、GitHub 或瀏覽器儲存空間中。網頁版 HEIC 視乎瀏覽器支援，建議使用 JPG／PNG。
 
 ## 第一次使用
 
 1. 按「連接 Qwen」，輸入香港區域的 API Key。Workspace ID 選填。「測試文字模型連線」會作一次小額請求，只驗證文字模型。
-2. 上載 PDF、DOCX、JPG、PNG 或 HEIC。本機先擷取及預覽；按「讓 Qwen 讀取工作紙」才把內容傳送至 Qwen。
+2. 上載 DOC、DOCX、PDF、JPG、JPEG 或 PNG。網頁版準備好文件後自動讓 Qwen 讀取；尚未輸入金鑰會先開啟設定，填寫並按「完成」後接續讀取。本機版仍需按「讓 Qwen 讀取工作紙」。
 3. 確認年級、科目及目標。用「檢查內容」修正誤讀。「其他選項」可填主題、摘要、原稿程度及選擇延伸題。
 4. 選擇程度。共有 7 級，原稿預設第 4 級，第 7 級最難；初選 1、4、7。「微調」提供可編輯的程度設定。
 5. 檢查各版本及答案，可修改文字、重做單題或對照原稿。勾選已檢查後，下載 Word 或透過列印視窗儲存 PDF。
@@ -49,9 +49,9 @@ Word 支援目前工作紙、答案，或兩者一起下載。A4 模板使用黑
 
 ## 儲存及限制
 
-程式只接受本機連線，不把 API Key 寫入檔案或瀏覽器儲存空間；重新整理後要再輸入。沒有 Keychain 整合。
+網頁版的金鑰只在本次分頁記憶體內；重新整理後要再輸入。本機 Python 服務仍只接受本機連線。兩種模式都不把 API Key 寫入檔案或瀏覽器儲存空間。
 
-工作紙庫及非金鑰設定使用該瀏覽器、該網址的 localStorage。清除瀏覽器資料會移除工作紙庫，請下載 Word 留底。上載內容在本機服務記憶體最多保留兩小時；重啟後，尚未完成 Qwen 讀取的檔案須重新上載。Qwen 收到的內容受供應商資料政策約束。
+工作紙庫及非金鑰設定使用該瀏覽器、該網址的 localStorage。清除瀏覽器資料會移除工作紙庫，請下載 Word 留底。網頁版原稿在分頁記憶體內，上載另一份原稿會取代上一份；重新整理後未讀取的原稿須重新上載。本機服務最多保留原稿兩小時。Qwen 收到的內容受供應商資料政策約束。
 
 圖片生成、音訊及影片未接駁。官方 Qwen-Image 文件目前沒有列出香港端點，因此此版本不作跨區接駁；數學圖解由本機繪製。[Qwen-Image API](https://www.alibabacloud.com/help/en/model-studio/qwen-image-api)。
 
@@ -59,6 +59,10 @@ Word 支援目前工作紙、答案，或兩者一起下載。A4 模板使用黑
 
 ## 驗證
 
-21 項後端測試及 41 項瀏覽器檢查通過，包括真實本機上載、費用確認、Word 下載、編輯、儲存、取消及部分失敗。模型回覆使用獨立測試資料，沒有發出 Qwen 請求。開發用 QA 腳本及頁面圖不包含在應用程式發佈檔案內。
+`npm test` 驗證網頁版的資料合約、目標保留、精確分數核對、香港端點、切換、取消及錯誤處理。另已在 Chrome 驗證六種真實檔案格式、PDF 逐頁圖片、輸入金鑰後接續讀取、生成及 Word 下載；模型回覆使用測試資料。
 
-尚未使用真實 API Key 驗證帳戶連線、模型權限、品質及速度。請在應用程式輸入金鑰作下一步測試，不必貼到對話中。介面備份在 `work/design-v1-backup` 和 `work/design-v2-backup`。
+尚未使用使用者的真實 API Key 驗證帳戶模型權限、品質及速度。請在應用程式輸入自己的香港區域金鑰。
+
+## 網頁版開發及發佈
+
+執行 `npm ci`、`npm test`、`npm run build`。`dist` 是可部署的網站；GitHub Actions 在推送 main 後自動建立並發佈至 GitHub Pages。瀏覽器模組在 `browser/`，Python 本機服務保留於根目錄。依賴版本鎖定於 `package-lock.json`。

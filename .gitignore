@@ -14,3 +14,5 @@ functional-fixtures/
 *.secret
 exports/
 uploads/
+node_modules/
+dist/

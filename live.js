@@ -1,6 +1,8 @@
 "use strict";
 // Integration layer: the original visual demo remains available without a key.
-const live = { available: false, document: null, source: null, busy: false, job: null,
+const browserMode = !['127.0.0.1', 'localhost', '[::1]'].includes(location.hostname);
+let browserService;
+const live = { available: browserMode, pendingRead: false, document: null, source: null, busy: false, job: null,
   stopped: false, error: "", controller: null, connected: false };
 const subjectText = s => ({ maths: "數學", chinese: "中文", english: "英文" }[s] || "數學");
 
@@ -24,6 +26,13 @@ function installLiveUI() {
 }
 
 async function localAPI(path, data, { key = false, binary = false, signal } = {}) {
+  if (browserMode) {
+    browserService ||= import(new URL('browser/entry.js?v=4.1', document.baseURI).href);
+    let service;
+    try { service = await browserService; }
+    catch { browserService = null; throw new Error(t('文件工具未能載入，請重新整理網頁後再試。', 'Document tools could not load. Refresh the page and retry.')); }
+    return service.request(path, data, key ? $('#api-key').value.trim() : '');
+  }
   let response;
   try {
     response = await fetch(path, { method: data === undefined ? "GET" : "POST", headers: {
@@ -131,12 +140,13 @@ function syncSetup() {
   copyLabel(".create-action > .field-note", api ? "保留題目順序 · 生成前會檢查費用提示門檻" : "預先準備的分數題目 · 不使用 API", api ? "Original order retained · Cost threshold checked before requests" : "Prepared fraction examples · No API calls");
 }
 function resetLive() {
+  live.pendingRead = false;
   live.document = null; live.source = null; notice("");
   $("#use-qwen").checked = false; $("#subject-select").value = "maths";
 }
 async function importFile(file) {
   if (live.busy) return toast(t("請先等候目前操作完成。", "Wait for the current operation."));
-  if (!/\.(pdf|docx|png|jpe?g|heic)$/i.test(file.name)) return toast(t("請選擇 PDF、DOCX 或圖片。", "Choose PDF, DOCX or an image."));
+  if (!/\.(pdf|docx?|png|jpe?g|heic)$/i.test(file.name)) return toast(t("請選擇 DOC、DOCX、PDF、JPG、JPEG 或 PNG。", "Choose DOC, DOCX, PDF, JPG, JPEG or PNG."));
   if (file.size > 15 * 1024 * 1024) return toast(t("檔案不可超過 15 MB。", "Files must be under 15 MB."));
   startSample(); state.imported = true; state.fileName = file.name;
   $("#objective").value = ""; $("#topic").value = file.name.replace(/\.[^.]+$/, "");
@@ -147,6 +157,10 @@ async function importFile(file) {
     notice(live.document.notices.join("\n"));
   } catch (error) { report(error); }
   finally { live.busy = false; $("#file-input").value = ""; renderSource(); renderImportNotice(); syncSetup(); }
+  if (browserMode && live.document) {
+    if ($('#api-key').value.trim()) await analyzeUpload();
+    else { live.pendingRead = true; showDialog('settings'); $('#api-key').focus(); }
+  }
 }
 function sourceMarkup(source) {
   let previous = "";
@@ -158,7 +172,7 @@ function sourceMarkup(source) {
 function renderLiveSource() {
   if (!state.imported && !live.source) return false;
   $("#source-paper").innerHTML = live.source ? sourceMarkup(live.source)
-    : live.document ? `${/\.docx$/i.test(live.document.fileName) || !live.document.images.length ? `<pre class="raw-source-text">${esc(live.document.text)}</pre>${live.document.images.map(src => `<img class="source-page-image" src="${src}" alt="${t("Word 內嵌圖片", "Embedded Word image")}"/>`).join("")}` : `<img class="source-page-image" src="${live.document.images[0]}" alt="${esc(t("原稿第一頁預覽", "First source page"))}"/>`}`
+    : live.document ? `${/\.docx?$/i.test(live.document.fileName) || !live.document.images.length ? `<pre class="raw-source-text">${esc(live.document.text)}</pre>${live.document.images.map(src => `<img class="source-page-image" src="${src}" alt="${t("Word 內嵌圖片", "Embedded Word image")}"/>`).join("")}` : `<img class="source-page-image" src="${live.document.images[0]}" alt="${esc(t("原稿第一頁預覽", "First source page"))}"/>`}`
     : `<p class="source-placeholder">${esc(t(live.busy ? "正在本機讀取檔案…" : "尚未讀取內容", live.busy ? "Reading locally…" : "No content read yet"))}</p>`;
   return true;
 }
@@ -167,7 +181,7 @@ function renderLiveImport() {
   $("#source-name").textContent = state.fileName;
   $("#import-notice").hidden = false;
   $("#import-notice").textContent = live.source ? t(`已讀取 ${live.source.questions.length} 題。請確認目標；如有誤讀，可按「檢查內容」修正。`, `Read ${live.source.questions.length} questions. Confirm the objective; use Check content to correct reading errors.`)
-    : live.document ? t(`本機已讀取檔案。按下方按鈕後，內容才會傳送至香港 Qwen 服務。`, "File read locally. Its content is sent to Qwen's Hong Kong service when you press the button below.")
+    : live.document ? t(browserMode ? '檔案已準備好。Qwen 會讀取文字、圖片及題目。' : '本機已讀取檔案。按下方按鈕後，內容才會傳送至香港 Qwen 服務。', browserMode ? 'File ready. Qwen will read its text, pictures and questions.' : "File read locally. Its content is sent to Qwen's Hong Kong service when you press the button below.")
     : t(live.busy ? "正在本機讀取檔案…" : "未能讀取檔案，請更換或重試。", live.busy ? "Reading locally…" : "Could not read the file. Choose another or retry.");
   $(".source-preview .preview-label span:last-child").textContent = live.source ? t("讀取內容", "Extracted content") : t("本機預覽", "Local preview");
   return true;
@@ -182,6 +196,7 @@ function confirmedSource() {
   return { ...source, topic: $("#topic").value.trim(), objective: $("#objective").value.trim(), grade: Number($("#grade-select").value), subject: $("#subject-select").value, summary: $("#content-notes").value || source.summary };
 }
 async function analyzeUpload() {
+  live.pendingRead = false;
   try {
     const result = await runLive("analyze", { documentId: live.document.documentId, topic: $("#topic").value, notes: $("#content-notes").value });
     live.source = result.source;
@@ -298,6 +313,7 @@ function saveSourceEditor() {
   closeDialog($("#source-dialog")); renderSource();
 }
 function afterTranslate() {
+  $('.file-types').textContent = 'DOC · DOCX · PDF · JPG · JPEG · PNG';
   copyLabel("#settings-dialog h2", "連接你的 Qwen", "Connect your Qwen account");
   copyLabel("#settings-dialog .dialog-intro", "文件理解及題目調整使用同一個模型服務金鑰。精確數學圖解由本機繪製。", "Document reading and question adaptation use the same model-service key. Exact maths diagrams are drawn locally.");
   copyLabel("#settings-dialog .field > small", "金鑰不會儲存到磁碟。只有讀取、製作或測試時才送交香港服務。", "The key is not saved to disk. It is sent to Hong Kong only when reading, generating or testing.");
@@ -330,6 +346,7 @@ document.addEventListener("click", async e => {
   if (button.dataset.action === "edit-source") openSourceEditor();
   if (button.dataset.action === "save-source") saveSourceEditor();
   if (button.dataset.action === "forget-key") { live.connected = false; $("#connection-result").textContent = ""; }
+  if (button.dataset.action === 'save-settings' && live.pendingRead && $('#api-key').value.trim()) await analyzeUpload();
   if (button.dataset.action === "test-connection") {
     try {
       const result = await runLive("test", {}); live.connected = true;

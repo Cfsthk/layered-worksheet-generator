@@ -1,0 +1,13 @@
+{
+  "name": "layered-worksheet-generator",
+  "private": true,
+  "version": "0.4.0",
+  "scripts": { "build": "node scripts/build.mjs", "test": "node --test tests/browser-domain.test.mjs" },
+  "dependencies": {
+    "docx": "9.5.1",
+    "jszip": "3.10.1",
+    "pdfjs-dist": "5.4.149",
+    "word-extractor": "1.0.4"
+  },
+  "devDependencies": { "esbuild": "0.25.9", "esbuild-plugins-node-modules-polyfill": "1.7.1" }
+}

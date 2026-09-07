@@ -125,7 +125,7 @@ function startSample() {
 function handleFile(file) {
   if (!file) return;
   if (window.SevenLive) { window.SevenLive.importFile(file); return; }
-  if (!/\.(pdf|docx|png|jpe?g|heic)$/i.test(file.name)) { toast(t("請選擇 PDF、Word 或圖片檔案。", "Choose a PDF, Word document or image.")); return; }
+  if (!/\.(pdf|docx?|png|jpe?g|heic)$/i.test(file.name)) { toast(t("請選擇 PDF、Word 或圖片檔案。", "Choose a PDF, Word document or image.")); return; }
   startSample(); state.imported = true; state.fileName = file.name;
   renderImportNotice(); $("#file-input").value = "";
 }
