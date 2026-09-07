@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="分層工作紙生成 — 按程度製作工作紙。" />
+  <title>分層工作紙生成 · 工作紙</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232a4ee4'/%3E%3Cpath d='M19 17h21v26H19zM26 24h21v26H26' fill='none' stroke='white' stroke-width='3'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <svg class="sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h15m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M20 12H5m6-6-6 6 6 6"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M5 3h9l5 5v13H5zM14 3v5h5M8 12h8m-8 4h6"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="9" r="5"/><path d="m12 12 8 8m-5-5 2-2m1 5 2-2"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h7m5 0h4M4 17h2m5 0h9M11 4v6M6 14v6"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M4 10a8 8 0 1 1 0 5M4 4v6h6"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1.5"/><path d="m4 18 5-5 3 3 4-6 4 6"/></symbol>
+    <symbol id="i-text" viewBox="0 0 24 24"><path d="M4 5h16M4 10h12M4 15h16M4 20h9"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v13m-5-5 5 5 5-5M4 17v4h16v-4"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7"/></symbol>
+  </svg>
+  <header class="app-header">
+    <button class="brand" data-action="home" aria-label="分層工作紙生成 首頁"><span class="brand-mark" aria-hidden="true"><i></i><i></i></span><span class="brand-name">分層工作紙生成</span></button>
+    <nav class="header-actions" aria-label="Navigation"><button class="quiet" data-action="library" data-zh="我的工作紙" data-en="My worksheets">我的工作紙</button><button class="quiet language-button" data-action="language" aria-label="Switch interface language">EN</button><button class="connection-button" data-action="settings"><svg><use href="#i-key"/></svg><span data-zh="連接 Qwen" data-en="Connect Qwen">連接 Qwen</span></button></nav>
+  </header>
+  <main>
+    <section id="home-view" class="view home-view">
+      <div class="home-workspace">
+        <div class="start-column">
+          <p class="eyebrow"><span class="small-rule"></span><span data-zh="為每一個程度準備" data-en="PREPARE FOR EVERY LEVEL">為每一個程度準備</span></p>
+          <h1 data-zh="分層｜工作紙生成" data-en="Differentiated｜worksheet generator">分層<br>工作紙生成</h1>
+          <p class="intro" data-zh="保留熟悉的題目，按程度加入引導或挑戰。" data-en="Keep the questions familiar. Add guidance or a little more challenge.">保留熟悉的題目，按程度加入引導或挑戰。</p>
+          <div id="dropzone" class="dropzone"><button class="primary upload-button" data-action="upload"><svg><use href="#i-upload"/></svg><span data-zh="上載工作紙" data-en="Upload worksheet">上載工作紙</span><svg class="upload-arrow"><use href="#i-arrow"/></svg></button><p data-zh="或將檔案拖到這裡" data-en="or drop a file here">或將檔案拖到這裡</p><span class="file-types">PDF · Word · JPG · PNG · HEIC</span></div>
+          <button class="sample-link" data-action="demo"><span data-zh="先試試示範工作紙" data-en="Try a sample worksheet">先試試示範工作紙</span><svg><use href="#i-arrow"/></svg></button>
+        </div>
+        <div class="example-column" aria-label="Worksheet adaptation example">
+          <div class="example-tabs" role="group" aria-label="Preview difficulty"><button data-example="1" aria-pressed="true" class="active" data-zh="多一點引導" data-en="More guidance">多一點引導</button><button data-example="4" aria-pressed="false" data-zh="保留原程度" data-en="Original level">保留原程度</button><button data-example="7" aria-pressed="false" data-zh="多一點挑戰" data-en="More challenge">多一點挑戰</button></div>
+          <div class="paper-scene"><div class="back-paper" aria-hidden="true"><span>原始工作紙</span><strong>分數比較</strong><div class="ghost-rule"></div><p>比較下列各組分數。</p><div class="ghost-equation">2/3　○　3/5</div><i></i><i></i><i></i><small>4</small></div><article class="example-paper" id="example-paper"></article><div class="margin-caption"><span>01 — 07</span><i></i><span data-zh="同一目標，不同程度" data-en="ONE OBJECTIVE. SEVEN LEVELS.">同一目標，不同程度</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="setup-view" class="view setup-view" hidden>
+      <div class="view-topline"><button class="back-link" data-action="home"><svg><use href="#i-back"/></svg><span data-zh="返回" data-en="Back">返回</span></button><span class="muted" data-zh="1. 選擇程度　 /　 2. 檢查工作紙" data-en="1. Choose levels　 /　 2. Review worksheets">1. 選擇程度　 /　 2. 檢查工作紙</span></div>
+      <div class="setup-layout"><div class="setup-form">
+        <p class="eyebrow" data-zh="準備你的版本" data-en="PREPARE YOUR VERSIONS">準備你的版本</p><h1 data-zh="這次，需要哪些程度？" data-en="Which levels do you need?">這次，需要哪些程度？</h1>
+        <div class="file-line"><svg><use href="#i-file"/></svg><span id="source-name">分數比較.pdf</span><button class="quiet" data-action="upload" data-zh="更換" data-en="Change">更換</button></div><p id="import-notice" class="import-notice" hidden></p>
+        <form id="setup-form">
+          <div class="metadata-inline"><label><span data-zh="年級" data-en="Year">年級</span><select id="grade-select" aria-label="Year level"></select></label><span class="inline-divider"></span><span data-zh="數學 · 繁體中文" data-en="Maths · Traditional Chinese">數學 · 繁體中文</span></div>
+          <label class="field objective-label"><span data-zh="這份工作紙的學習目標" data-en="The learning objective">這份工作紙的學習目標</span><textarea id="objective" rows="2" required>比較異分母分數的大小，並解釋比較方法。</textarea><small data-zh="可以直接修改。所有程度都會保留這個目標。" data-en="Edit as needed. Every level keeps this objective.">可以直接修改。所有程度都會保留這個目標。</small></label>
+          <div class="level-control"><div class="label-line"><label data-zh="選擇要製作的程度" data-en="Choose levels to create">選擇要製作的程度</label><button type="button" class="quiet" data-action="presets"><svg><use href="#i-sliders"/></svg><span data-zh="微調" data-en="Adjust">微調</span></button></div><div id="level-picker" class="level-picker" role="group" aria-label="Difficulty levels"></div><div class="scale-labels"><span data-zh="更多引導" data-en="More guidance">更多引導</span><span id="baseline-label">原稿：4</span><span data-zh="更多挑戰" data-en="More challenge">更多挑戰</span></div></div>
+          <details class="more-options"><summary><span data-zh="其他選項" data-en="More options">其他選項</span><svg><use href="#i-chevron"/></svg></summary><div class="options-body"><div class="two-fields"><label class="field"><span data-zh="主題" data-en="Topic">主題</span><input id="topic" value="分數比較" required /></label><label class="field"><span data-zh="原稿程度" data-en="Source level">原稿程度</span><select id="source-level"></select></label></div><label class="field"><span data-zh="內容備註（選填）" data-en="Content notes (optional)">內容備註（選填）</span><textarea id="content-notes" rows="2"></textarea></label><label class="checkbox-row"><input type="checkbox" id="extend-mode" /><span data-zh="延伸學習目標" data-en="Extend the objective">延伸學習目標</span></label><p class="field-note" id="extend-note" hidden data-zh="延伸模式需要正式模型連線，原型未開放。" data-en="Extension requires the live model connection and is not available in this prototype.">延伸模式需要正式模型連線，原型未開放。</p></div></details>
+          <div class="create-action"><button type="submit" class="primary" id="generate-button"><span id="generate-label">確認目標，製作 3 個版本</span><svg><use href="#i-arrow"/></svg></button><span class="field-note" data-zh="題目順序與份量跟隨原稿 · 示範生成" data-en="Original order and workload retained · Demo generation">題目順序與份量跟隨原稿 · 示範生成</span></div>
+        </form>
+      </div><aside class="source-preview"><div class="preview-label"><span data-zh="原始工作紙" data-en="YOUR SOURCE">原始工作紙</span><span data-zh="內容預覽" data-en="Content preview">內容預覽</span></div><div id="source-paper" class="source-paper"></div><p data-zh="改變程度，保留原稿的脈絡。" data-en="Adjust the level. Keep the original thread.">改變程度，保留原稿的脈絡。</p></aside></div>
+    </section>
+
+    <section id="review-view" class="view review-view" hidden>
+      <div class="review-heading"><div><button class="back-link" data-action="back-setup"><svg><use href="#i-back"/></svg><span data-zh="調整程度" data-en="Adjust levels">調整程度</span></button><h1 id="review-title">分數比較</h1></div><div class="download-area"><button class="primary" data-action="download" id="download-button" disabled><svg><use href="#i-download"/></svg><span data-zh="下載" data-en="Download">下載</span><svg><use href="#i-chevron"/></svg></button><div class="download-menu" id="download-menu" hidden><button data-action="print" data-zh="PDF · 目前版本" data-en="PDF · Current version">PDF · 目前版本</button><button disabled data-zh="Word · 正式版本提供" data-en="Word · Available in the functional build">Word · 正式版本提供</button></div></div></div>
+      <div class="review-bar"><div class="review-tabs" id="review-tabs" role="group" aria-label="Generated versions"></div><button class="quiet" data-action="compare" aria-pressed="false"><span data-zh="原稿對照" data-en="Compare original">原稿對照</span></button></div>
+      <div class="review-canvas" id="review-canvas"><div class="comparison-page" id="comparison-page" hidden><p class="paper-label" data-zh="原稿" data-en="Original">原稿</p><div id="comparison-content"></div></div><div class="current-page"><div class="paper-toolbar"><div class="segmented"><button class="active" data-document="student" aria-pressed="true" data-zh="學生工作紙" data-en="Student worksheet">學生工作紙</button><button data-document="answers" aria-pressed="false" data-zh="答案" data-en="Answer key">答案</button></div><span id="save-indicator" data-zh="點選題目即可修改" data-en="Click a question to edit">點選題目即可修改</span></div><article id="worksheet-page" class="worksheet-page"></article></div></div>
+      <div class="review-bottom"><label class="checkbox-row"><input type="checkbox" id="review-approved" /><span data-zh="已檢查這個版本的題目及答案" data-en="I have reviewed this version and its answers">已檢查這個版本的題目及答案</span></label><span id="review-status" class="field-note"></span></div>
+    </section>
+  </main>
+  <input id="file-input" type="file" accept=".pdf,.docx,.png,.jpg,.jpeg,.heic" hidden />
+
+  <dialog id="settings-dialog" class="dialog settings-dialog">
+    <div class="dialog-heading"><div><p class="eyebrow" data-zh="模型連線" data-en="MODEL CONNECTION">模型連線</p><h2 data-zh="一次連接，三種能力。" data-en="One connection. Three capabilities.">一次連接，三種能力。</h2></div><button class="icon-button" data-close aria-label="Close"><svg><use href="#i-close"/></svg></button></div>
+    <p class="dialog-intro" data-zh="文件理解及題目調整使用同一個模型服務金鑰。" data-en="Document reading and question adaptation use the same model-service key.">文件理解及題目調整使用同一個模型服務金鑰。</p>
+    <div class="service-list"><div><svg><use href="#i-file"/></svg><span data-zh="看懂工作紙" data-en="Understand worksheets">看懂工作紙</span><small>Vision</small></div><div><svg><use href="#i-text"/></svg><span data-zh="調整題目與解說" data-en="Adapt questions and explanations">調整題目與解說</span><small>Language</small></div><div><svg><use href="#i-image"/></svg><span data-zh="製作教學插圖" data-en="Create teaching illustrations">製作教學插圖</span><small>Image</small></div></div>
+    <label class="field"><span>API Key</span><div class="key-input"><input id="api-key" type="password" autocomplete="off" spellcheck="false" placeholder="sk-…" /><button class="quiet" type="button" data-action="show-key" data-zh="顯示" data-en="Show">顯示</button></div><small data-zh="原型不連線；金鑰只保留在本次開啟的記憶體中。" data-en="No API requests in this prototype. The key stays in memory for this session only.">原型不連線；金鑰只保留在本次開啟的記憶體中。</small></label>
+    <details class="more-options"><summary><span data-zh="模型與連線設定" data-en="Models & connection">模型與連線設定</span><svg><use href="#i-chevron"/></svg></summary><div class="options-body"><p class="region-note" data-zh="官方香港區域 · Global 推理範圍" data-en="Official Hong Kong region · Global inference scope">官方香港區域 · Global 推理範圍</p><label class="field"><span>Workspace ID</span><input id="workspace-id" placeholder="llm-xxxxxxxx" autocomplete="off" spellcheck="false" /></label><p class="endpoint" id="endpoint">https://{WorkspaceId}.cn-hongkong.maas.aliyuncs.com/compatible-mode/v1</p><div id="model-options"></div><label class="checkbox-row"><input type="checkbox" id="fallback" checked /><span data-zh="模型無法使用時自動切換（可使用較昂貴模型）" data-en="Switch automatically if unavailable (may cost more)">模型無法使用時自動切換（可使用較昂貴模型）</span></label><label class="cost-setting"><span data-zh="超過此費用時先確認" data-en="Ask before exceeding">超過此費用時先確認</span><span>US$ <input type="number" id="cost-limit" min="0" step="0.5" value="1" /></span></label><small class="field-note" data-zh="未連線，現時不會產生 API 費用。精確數學圖解由程式繪製。" data-en="Disconnected; no API charges. Exact maths diagrams are rendered programmatically.">未連線，現時不會產生 API 費用。精確數學圖解由程式繪製。</small></div></details>
+    <div class="dialog-footer"><button class="quiet" data-action="forget-key" data-zh="清除金鑰" data-en="Clear key">清除金鑰</button><button class="primary" data-action="save-settings" data-zh="完成" data-en="Done">完成</button></div>
+  </dialog>
+  <dialog id="presets-dialog" class="dialog presets-dialog"><div class="dialog-heading"><div><p class="eyebrow" data-zh="按需要調整" data-en="ADJUST AS NEEDED">按需要調整</p><h2 data-zh="程度的細節，你決定。" data-en="You decide what a level means.">程度的細節，你決定。</h2></div><button class="icon-button" data-close aria-label="Close"><svg><use href="#i-close"/></svg></button></div><div class="preset-tabs" id="preset-tabs" role="group" aria-label="Preset to edit"></div><div id="preset-detail"></div><div class="dialog-footer"><button class="quiet" data-action="reset-preset" data-zh="還原這個程度" data-en="Reset this level">還原這個程度</button><button class="primary" data-action="save-preset" data-zh="儲存調整" data-en="Save adjustments">儲存調整</button></div></dialog>
+  <dialog id="library-dialog" class="dialog library-dialog"><div class="dialog-heading"><h2 data-zh="我的工作紙" data-en="My worksheets">我的工作紙</h2><button class="icon-button" data-close aria-label="Close"><svg><use href="#i-close"/></svg></button></div><p class="dialog-intro" data-zh="儲存在這部電腦，隨時繼續編輯。" data-en="Saved on this computer. Pick up where you left off.">儲存在這部電腦，隨時繼續編輯。</p><div id="library-list"></div></dialog>
+  <dialog id="about-dialog" class="dialog small-dialog"><div class="dialog-heading"><h2 data-zh="這是可操作的設計原型" data-en="An interactive design prototype">這是可操作的設計原型</h2><button class="icon-button" data-close aria-label="Close"><svg><use href="#i-close"/></svg></button></div><p class="dialog-intro" data-zh="你可以選擇程度、修改示範題目、儲存工作紙及列印 PDF。上載解析、Qwen 生成、課程校準與 Word 匯出仍待接駁；畫面中的題目使用預先準備的分數示範。" data-en="Choose levels, edit sample questions, save worksheets locally and print to PDF. Upload parsing, Qwen generation, curriculum calibration and Word export are not connected yet. The questions use prepared fraction examples.">你可以選擇程度、修改示範題目、儲存工作紙及列印 PDF。上載解析、Qwen 生成、課程校準與 Word 匯出仍待接駁；畫面中的題目使用預先準備的分數示範。</p><button class="primary" data-close data-zh="知道了" data-en="Got it">知道了</button></dialog>
+  <dialog id="progress-dialog" class="dialog progress-dialog"><div class="progress-document" aria-hidden="true"><svg><use href="#i-file"/></svg><span></span></div><p class="eyebrow" data-zh="示範製作中" data-en="PREPARING DEMO VERSIONS">示範製作中</p><h2 id="progress-label">正在整理你的版本…</h2><div class="progress-track"><span id="progress-bar"></span></div><p class="field-note" data-zh="保留題目順序與學習目標" data-en="Keeping the question order and objective">保留題目順序與學習目標</p><button class="quiet" data-action="cancel" data-zh="取消" data-en="Cancel">取消</button></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+  <script src="live.js"></script>
+</body>
+</html>

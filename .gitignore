@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+.env
+.env.*
+*.log
+work/
+qa-functional-screens/
+functional-fixtures/
+
+# Never commit local credentials or generated exports.
+*.pem
+*.key
+*.secret
+exports/
+uploads/
