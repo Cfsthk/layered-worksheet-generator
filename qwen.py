@@ -39,9 +39,9 @@ def config(value):
 
 
 def host(settings):
-    value = settings.get("workspace", "").strip() or "ws-s57l452ce7d9h3vk.cn-hongkong.maas.aliyuncs.com"
+    value = settings.get("workspace", "").strip() or "dashscope-intl.aliyuncs.com"
     if re.fullmatch(r"[A-Za-z0-9-]{1,80}", value):
-        value += ".cn-hongkong.maas.aliyuncs.com"
+        value += ".ap-southeast-1.maas.aliyuncs.com"
     value = re.sub(r"^https://", "", value)
     value = re.sub(r"/(?:api/v1|compatible-mode/v1)/?$", "", value).removesuffix("/")
     if not re.fullmatch(r"(?:[A-Za-z0-9-]{1,80}\.(?:cn-hongkong|ap-southeast-1)\.maas\.aliyuncs\.com|dashscope-intl\.aliyuncs\.com|cn-hongkong\.dashscope\.aliyuncs\.com)", value):

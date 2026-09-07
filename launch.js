@@ -3,5 +3,5 @@
 // Opening the downloaded HTML takes the teacher to the working hosted app.
 // No worksheet, credentials or local path are included in this navigation.
 if (location.protocol === "file:") {
-  location.replace("https://cfsthk.github.io/layered-worksheet-generator/?release=4.4");
+  location.replace("https://cfsthk.github.io/layered-worksheet-generator/?release=4.5");
 }

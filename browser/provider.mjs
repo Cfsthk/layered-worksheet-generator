@@ -14,8 +14,8 @@ export function config(v = {}) {
   return { workspace, models, cost, fallback: v.fallback !== false };
 }
 export function host(c) {
-  let value = (c.workspace || '').trim() || 'ws-s57l452ce7d9h3vk.cn-hongkong.maas.aliyuncs.com';
-  if (/^[A-Za-z0-9-]{1,80}$/.test(value)) value += '.cn-hongkong.maas.aliyuncs.com';
+  let value = (c.workspace || '').trim() || 'dashscope-intl.aliyuncs.com';
+  if (/^[A-Za-z0-9-]{1,80}$/.test(value)) value += '.ap-southeast-1.maas.aliyuncs.com';
   value = value.replace(/^https:\/\//, '').replace(/\/(?:api\/v1|compatible-mode\/v1)\/?$/, '').replace(/\/$/, '');
   if (!/^(?:[A-Za-z0-9-]{1,80}\.(?:cn-hongkong|ap-southeast-1)\.maas\.aliyuncs\.com|dashscope-intl\.aliyuncs\.com|cn-hongkong\.dashscope\.aliyuncs\.com)$/.test(value)) throw fail('請貼上阿里雲提供的完整 API Host 或 API URL。');
   return value;

@@ -40,11 +40,11 @@ Word 支援目前工作紙、答案，或兩者一起下載。A4 模板使用黑
 
 - 文字：`qwen3.7-plus`，後備 `qwen3.6-plus`、`qwen-plus`。
 - 視覺：`qwen3-vl-plus`，後備 `qwen3-vl-plus-2025-12-19`。
-- 目前預設主機：`ws-s57l452ce7d9h3vk.cn-hongkong.maas.aliyuncs.com`。
-- 模型請求：`https://ws-s57l452ce7d9h3vk.cn-hongkong.maas.aliyuncs.com/compatible-mode/v1/chat/completions`。
+- 目前預設主機：`dashscope-intl.aliyuncs.com`。
+- 模型請求：`https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions`。
 - 可貼上完整 Host、`https://…/api/v1` 或 `https://…/compatible-mode/v1`；程式保留主機及區域，使用 OpenAI 相容路徑。
 
-API Key 必須屬於指定主機的 Workspace。香港及新加坡的官方主機均可設定，程式不會自動切換區域。只有 Workspace ID 時按本專案的香港區域處理，其他區域請提供完整 Host。舊版硬編碼的國際主機設定會一次性遷移至目前提供的主機；之後保留使用者儲存的完整主機。[官方端點](https://www.alibabacloud.com/help/en/model-studio/base-url)、[區域及推理範圍](https://www.alibabacloud.com/help/en/model-studio/regions)。
+預設使用 Qwen 國際服務（新加坡），API Key 必須屬於新加坡區域；自訂 Workspace 主機則必須使用該 Workspace 的 Key。香港及新加坡的官方主機均可設定，請求不會自動切換區域。只有 Workspace ID 時按新加坡區域處理，其他區域請提供完整 Host。4.5 版會將舊版連線設定一次性遷移至國際主機；之後保留使用者儲存的完整主機。[官方端點](https://www.alibabacloud.com/help/en/model-studio/base-url)、[區域及推理範圍](https://www.alibabacloud.com/help/en/model-studio/regions)。
 
 自動切換適用於模型不支援、限流及明確服務錯誤。金鑰錯誤、不完整回覆或不確定是否已收費的網絡逾時會停止該請求。最多同時處理 3 份，部分失敗時保留完成的版本並標示失敗級別。
 

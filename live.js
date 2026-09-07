@@ -27,7 +27,7 @@ function installLiveUI() {
 
 async function localAPI(path, data, { key = false, binary = false, signal } = {}) {
   if (browserMode) {
-    browserService ||= import(new URL('browser/entry.js?v=4.4', document.baseURI).href);
+    browserService ||= import(new URL('browser/entry.js?v=4.5', document.baseURI).href);
     let service;
     try { service = await browserService; }
     catch { browserService = null; throw new Error(t('文件工具未能載入，請重新整理網頁後再試。', 'Document tools could not load. Refresh the page and retry.')); }
@@ -317,7 +317,7 @@ function afterTranslate() {
   copyLabel("#settings-dialog h2", "連接你的 Qwen", "Connect your Qwen account");
   copyLabel("#settings-dialog .dialog-intro", "文件理解及題目調整使用同一個模型服務金鑰。精確數學圖解由本機繪製。", "Document reading and question adaptation use the same model-service key. Exact maths diagrams are drawn locally.");
   copyLabel("#settings-dialog .field > small", "金鑰不會儲存到磁碟。只有讀取、製作或測試時才送交Qwen 服務。", "The key is not saved to disk. It is sent to Qwen service only when reading, generating or testing.");
-  copyLabel("#settings-dialog .region-note", "使用你提供的 API Host · 區域按主機設定", "Using your API Host · Region follows the host");
+  copyLabel("#settings-dialog .region-note", "預設 Qwen 國際服務（新加坡）· 可自訂 API Host", "Default: Qwen International (Singapore) · Custom API Host supported");
   copyLabel("#settings-dialog .options-body > small", "圖片生成未接駁：目前只接駁文字及視覺理解模型。", "Image generation is not connected yet; language and vision models are supported.");
   copyLabel("#settings-dialog .service-list > div:last-child > span", "精確數學圖解", "Exact maths diagrams");
   $("#settings-dialog .service-list > div:last-child small").textContent = t("本機", "Local");
