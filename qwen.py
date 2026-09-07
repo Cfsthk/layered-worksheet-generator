@@ -1,4 +1,4 @@
-"""Hong Kong-only transport. No key persistence, redirects or provider SDK required."""
+"""International Qwen transport. No key persistence, redirects or provider SDK required."""
 import json
 import math
 import re
@@ -40,7 +40,7 @@ def config(value):
 
 
 def host(settings):
-    return (settings["workspace"] + ".cn-hongkong.maas.aliyuncs.com") if settings["workspace"] else "cn-hongkong.dashscope.aliyuncs.com"
+    return (settings["workspace"] + ".ap-southeast-1.maas.aliyuncs.com") if settings["workspace"] else "dashscope-intl.aliyuncs.com"
 
 
 def models(settings, service):
@@ -80,14 +80,14 @@ def send_http(url, key, body, timeout):
             return json.loads(raw)
     except urllib.error.HTTPError as error:
         if error.code in {401, 403}:
-            raise AppError("金鑰無效、區域不符或沒有模型權限。請檢查香港區域的 API Key 及 Workspace。", "authentication", 401) from None
+            raise AppError("金鑰無效、區域不符或沒有模型權限。請檢查國際區域的 Qwen API Key 及 Workspace。", "authentication", 401) from None
         if error.code == 429:
             raise AppError("模型目前繁忙或額度不足。", "rate_limited", 429) from None
         if error.code in {400, 404, 422}:
-            raise AppError("這個模型不支援本次請求，或未在香港 Workspace 開通。", "model_unavailable", 502) from None
+            raise AppError("這個模型不支援本次請求，或未在國際 Workspace 開通。", "model_unavailable", 502) from None
         raise AppError(f"模型服務暫時無法使用（HTTP {error.code}）。", "provider_error", 502) from None
     except (urllib.error.URLError, TimeoutError, OSError):
-        raise AppError("未能連接香港模型服務，請檢查網絡後重試。", "network_error", 502) from None
+        raise AppError("未能連接國際 Qwen 服務，請檢查網絡後重試。", "network_error", 502) from None
     except (ValueError, KeyError):
         raise AppError("供應商回覆格式無效。", "invalid_output", 502) from None
 

@@ -29,9 +29,9 @@ test('extension only appears when explicitly enabled', () => {
   assert.equal(checkedVersion(v, source(), 1, false).extension, null);
   assert.equal(checkedVersion(v, source(), 1, true).extension.objective, 'extension');
 });
-test('region stays Hong Kong and unknown model price requires confirmation', () => {
-  assert.equal(host(config()), 'cn-hongkong.dashscope.aliyuncs.com');
-  assert.equal(host(config({ workspace: 'llm-example' })), 'llm-example.cn-hongkong.maas.aliyuncs.com');
+test('region stays international and unknown model price requires confirmation', () => {
+  assert.equal(host(config()), 'dashscope-intl.aliyuncs.com');
+  assert.equal(host(config({ workspace: 'llm-example' })), 'llm-example.ap-southeast-1.maas.aliyuncs.com');
   assert.throws(() => config({ workspace: 'evil.com/' }));
   assert.equal(estimate(config({ models: { vision: 'custom' } }), 'vision', 1, 1, 100), null);
 });
@@ -42,7 +42,7 @@ test('vision call includes images and key only in Authorization; fallback on exp
   });
   assert.equal(calls.length, 2); assert.equal(result.meta.notes.length, 1);
   for (const { url, options } of calls) {
-    assert.match(url, /^https:\/\/cn-hongkong\.dashscope\.aliyuncs\.com\//);
+    assert.match(url, /^https:\/\/dashscope-intl\.aliyuncs\.com\//);
     assert.equal(options.headers.Authorization, 'Bearer test-only-key');
     assert.equal(options.redirect, 'error'); assert.equal(options.credentials, 'omit');
     assert.equal(options.body.includes('test-only-key'), false);

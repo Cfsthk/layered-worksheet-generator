@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Seven worksheets: loopback-only local application server.
+"""Layered worksheets: loopback-only local application server.
 
 Run `python3 serve.py`. Credentials are accepted per operation in a request
-header, forwarded only to Alibaba's Hong Kong host, and never written to disk.
+header, forwarded only to Alibaba's international host, and never written to disk.
 """
 import argparse
 import copy
@@ -207,7 +207,7 @@ def start_job(body, key):
         QUOTES.pop(body["quoteId"])
         identifier = secrets.token_urlsafe(24)
         item = {"created": time.time(), "status": "running", "done": 0, "total": 1,
-                "message": "準備連接香港模型…", "cancel": client.cancel}
+                "message": "準備連接國際模型…", "cancel": client.cancel}
         JOBS[identifier] = item
 
     def progress(done, total, message):

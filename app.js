@@ -148,7 +148,7 @@ function syncEndpoint() {
   const raw=$("#workspace-id").value.trim();
   const valid=/^[a-zA-Z0-9-]+$/.test(raw);
   $("#workspace-id").setCustomValidity(raw && !valid ? t("只可使用英文字母、數字及連字號。", "Use letters, numbers and hyphens.") : "");
-  $("#endpoint").textContent=raw?`https://${valid?raw:"{WorkspaceId}"}.cn-hongkong.maas.aliyuncs.com/compatible-mode/v1`:"https://cn-hongkong.dashscope.aliyuncs.com/compatible-mode/v1";
+  $("#endpoint").textContent=raw?`https://${valid?raw:"{WorkspaceId}"}.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1`:"https://dashscope-intl.aliyuncs.com/compatible-mode/v1";
 }
 
 function gcd(a,b){ while(b){[a,b]=[b,a%b];}return a; }
