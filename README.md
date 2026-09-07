@@ -6,6 +6,8 @@
 
 直接開啟 [分層工作紙生成](https://cfsthk.github.io/layered-worksheet-generator/)。網頁版支援上載、Qwen 讀取、分層生成及 Word 下載，不需要啟動本機服務。
 
+雙擊下載的 `index.html` 會開啟上述網頁版；原始 HTML 不能以 `file://` 載入文件工具。檔案和金鑰不會隨跳轉傳送，請在開啟的網頁重新選擇工作紙。
+
 亦可雙擊 `start.command`，或執行 `./start.command` 開啟 [本機版](http://127.0.0.1:4173/)。本機版使用 Python 3.10+、`requirements.txt` 套件及 Poppler（`pdfinfo`、`pdftoppm`）；macOS 以 `textutil` 轉換舊版 DOC，以 `sips` 轉換 HEIC。
 
 網頁版在瀏覽器準備文件，直接以使用者的金鑰連接官方國際 Qwen 端點。PDF（包括掃描件）逐頁轉成圖片；JPG、JPEG、PNG 直接作為圖片；DOC、DOCX 擷取文字及可讀內嵌圖片，再由 Qwen 整理題目與目標。有圖片時使用所選視覺模型，純文字文件使用所選文字模型。這符合 Qwen 的[多圖片輸入介面](https://www.alibabacloud.com/help/en/model-studio/vision)。

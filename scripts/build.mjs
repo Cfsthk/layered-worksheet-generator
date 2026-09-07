@@ -6,7 +6,7 @@ await mkdir('dist', { recursive: true });
 await build({ entryPoints: ['browser/entry.js', 'browser/doc-worker.js'], outdir: 'dist/browser', bundle: true,
   splitting: true, format: 'esm', minify: true, target: 'es2022',
   plugins: [nodeModulesPolyfillPlugin({ globals: { Buffer: true, process: true }, modules: { buffer: true, stream: true, events: true, util: true, process: true, fs: 'empty' } })] });
-for (const file of ['index.html', 'app.js', 'live.js', 'styles.css']) await copyFile(file, `dist/${file}`);
+for (const file of ['index.html', 'launch.js', 'app.js', 'live.js', 'styles.css']) await copyFile(file, `dist/${file}`);
 await copyFile('node_modules/pdfjs-dist/build/pdf.worker.min.mjs', 'dist/browser/pdf.worker.min.mjs');
 await cp('node_modules/pdfjs-dist/cmaps', 'dist/browser/cmaps', { recursive: true });
 await cp('node_modules/pdfjs-dist/standard_fonts', 'dist/browser/standard_fonts', { recursive: true });

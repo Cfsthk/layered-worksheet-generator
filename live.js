@@ -1,6 +1,6 @@
 "use strict";
 // Integration layer: the original visual demo remains available without a key.
-const browserMode = !['127.0.0.1', 'localhost', '[::1]'].includes(location.hostname);
+const browserMode = location.protocol !== 'file:' && !['127.0.0.1', 'localhost', '[::1]'].includes(location.hostname);
 let browserService;
 const live = { available: browserMode, pendingRead: false, document: null, source: null, busy: false, job: null,
   stopped: false, error: "", controller: null, connected: false };
@@ -27,7 +27,7 @@ function installLiveUI() {
 
 async function localAPI(path, data, { key = false, binary = false, signal } = {}) {
   if (browserMode) {
-    browserService ||= import(new URL('browser/entry.js?v=4.1', document.baseURI).href);
+    browserService ||= import(new URL('browser/entry.js?v=4.3', document.baseURI).href);
     let service;
     try { service = await browserService; }
     catch { browserService = null; throw new Error(t('文件工具未能載入，請重新整理網頁後再試。', 'Document tools could not load. Refresh the page and retry.')); }
@@ -321,7 +321,7 @@ function afterTranslate() {
   copyLabel("#settings-dialog .options-body > small", "圖片生成未接駁：目前只接駁文字及視覺理解模型。", "Image generation is not connected yet; language and vision models are supported.");
   copyLabel("#settings-dialog .service-list > div:last-child > span", "精確數學圖解", "Exact maths diagrams");
   $("#settings-dialog .service-list > div:last-child small").textContent = t("本機", "Local");
-  const imageSelect = $("[data-model='image']"); if (imageSelect) { imageSelect.disabled = true; imageSelect.innerHTML = `<option>${t("香港接駁待支援", "HK integration deferred")}</option>`; $("[data-model-id='image']").hidden = true; }
+  const imageSelect = $("[data-model='image']"); if (imageSelect) { imageSelect.disabled = true; imageSelect.innerHTML = `<option>${t("圖片生成未接駁", "Image generation deferred")}</option>`; $("[data-model-id='image']").hidden = true; }
   $("#workspace-id").placeholder = t("選填；留空使用國際預設端點", "Optional; blank uses the international default");
   copyLabel("#about-dialog h2", "分層工作紙生成", "Differentiated worksheet generator");
   copyLabel("#about-dialog .dialog-intro", "可上載 PDF、Word 或圖片，透過國際 Qwen 讀取及改編工作紙，並匯出可編輯的 Word。沒有金鑰也可使用分數示範。內容及難度尚需老師核對，未經官方課程校準。圖片生成、音訊及影片仍未接駁。", "Upload PDF, Word or images, use international Qwen to read and adapt them, and export editable Word documents. The fraction demo works without a key. Teachers must review content and difficulty; formal curriculum calibration, generated illustrations, audio and video are not connected.");

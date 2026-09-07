@@ -290,6 +290,7 @@ class Handler(BaseHTTPRequestHandler):
                 name = "index.html" if path == "/" else path.lstrip("/")
                 types = {"index.html": "text/html; charset=utf-8", "styles.css": "text/css; charset=utf-8",
                          "app.js": "text/javascript; charset=utf-8", "live.js": "text/javascript; charset=utf-8",
+                         "launch.js": "text/javascript; charset=utf-8",
                          "preview-home.png": "image/png", "preview-review.png": "image/png"}
                 if name not in types:
                     raise AppError("找不到頁面。", "not_found", 404)
