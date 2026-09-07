@@ -1,4 +1,4 @@
-"""International Qwen transport. No key persistence, redirects or provider SDK required."""
+"""Workspace Qwen transport. No key persistence, redirects or provider SDK required."""
 import json
 import math
 import re
@@ -20,8 +20,7 @@ RATES = {"qwen3.7-plus": (0.826, 3.301), "qwen3.6-plus": (1.101, 6.602),
 def config(value):
     value = value if isinstance(value, dict) else {}
     workspace = str(value.get("workspace", "")).strip()
-    if workspace and not re.fullmatch(r"[A-Za-z0-9-]{1,80}", workspace):
-        raise AppError("Workspace ID 只可使用英文字母、數字及連字號。")
+    host({"workspace": workspace})
     models = value.get("models", {})
     if not isinstance(models, dict):
         raise AppError("模型設定格式錯誤。")
@@ -40,7 +39,14 @@ def config(value):
 
 
 def host(settings):
-    return (settings["workspace"] + ".ap-southeast-1.maas.aliyuncs.com") if settings["workspace"] else "dashscope-intl.aliyuncs.com"
+    value = settings.get("workspace", "").strip() or "ws-s57l452ce7d9h3vk.cn-hongkong.maas.aliyuncs.com"
+    if re.fullmatch(r"[A-Za-z0-9-]{1,80}", value):
+        value += ".cn-hongkong.maas.aliyuncs.com"
+    value = re.sub(r"^https://", "", value)
+    value = re.sub(r"/(?:api/v1|compatible-mode/v1)/?$", "", value).removesuffix("/")
+    if not re.fullmatch(r"(?:[A-Za-z0-9-]{1,80}\.(?:cn-hongkong|ap-southeast-1)\.maas\.aliyuncs\.com|dashscope-intl\.aliyuncs\.com|cn-hongkong\.dashscope\.aliyuncs\.com)", value):
+        raise AppError("請貼上阿里雲提供的完整 API Host 或 API URL。")
+    return value
 
 
 def models(settings, service):
@@ -80,14 +86,14 @@ def send_http(url, key, body, timeout):
             return json.loads(raw)
     except urllib.error.HTTPError as error:
         if error.code in {401, 403}:
-            raise AppError("金鑰無效、區域不符或沒有模型權限。請檢查國際區域的 Qwen API Key 及 Workspace。", "authentication", 401) from None
+            raise AppError("金鑰無效、區域不符或沒有模型權限。請檢查此 Workspace 的 Qwen API Key 及 Workspace。", "authentication", 401) from None
         if error.code == 429:
             raise AppError("模型目前繁忙或額度不足。", "rate_limited", 429) from None
         if error.code in {400, 404, 422}:
-            raise AppError("這個模型不支援本次請求，或未在國際 Workspace 開通。", "model_unavailable", 502) from None
+            raise AppError("這個模型不支援本次請求，或未在此 Workspace 開通。", "model_unavailable", 502) from None
         raise AppError(f"模型服務暫時無法使用（HTTP {error.code}）。", "provider_error", 502) from None
     except (urllib.error.URLError, TimeoutError, OSError):
-        raise AppError("未能連接國際 Qwen 服務，請檢查網絡後重試。", "network_error", 502) from None
+        raise AppError("未能連接Qwen 服務，請檢查網絡後重試。", "network_error", 502) from None
     except (ValueError, KeyError):
         raise AppError("供應商回覆格式無效。", "invalid_output", 502) from None
 

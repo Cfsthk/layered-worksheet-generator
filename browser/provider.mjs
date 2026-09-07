@@ -3,7 +3,7 @@ export const defaults = { vision: ['qwen3-vl-plus', 'qwen3-vl-plus-2025-12-19'],
 const rates = { 'qwen3.7-plus': [0.826, 3.301], 'qwen3.6-plus': [1.101, 6.602], 'qwen-plus': [1.2, 12], 'qwen3-vl-plus': [0.6, 4.8], 'qwen3-vl-plus-2025-12-19': [0.6, 4.8] };
 export function config(v = {}) {
   const workspace = String(v.workspace || '').trim();
-  if (workspace && !/^[A-Za-z0-9-]{1,80}$/.test(workspace)) throw fail('Workspace ID 格式錯誤。');
+  host({ workspace });
   const models = {};
   for (const service of Object.keys(defaults)) {
     models[service] = v.models?.[service] || '';
@@ -13,7 +13,13 @@ export function config(v = {}) {
   if (!Number.isFinite(cost) || cost < 0 || cost > 100) throw fail('費用門檻須介乎 US$0 至 US$100。');
   return { workspace, models, cost, fallback: v.fallback !== false };
 }
-export const host = c => c.workspace ? `${c.workspace}.ap-southeast-1.maas.aliyuncs.com` : 'dashscope-intl.aliyuncs.com';
+export function host(c) {
+  let value = (c.workspace || '').trim() || 'ws-s57l452ce7d9h3vk.cn-hongkong.maas.aliyuncs.com';
+  if (/^[A-Za-z0-9-]{1,80}$/.test(value)) value += '.cn-hongkong.maas.aliyuncs.com';
+  value = value.replace(/^https:\/\//, '').replace(/\/(?:api\/v1|compatible-mode\/v1)\/?$/, '').replace(/\/$/, '');
+  if (!/^(?:[A-Za-z0-9-]{1,80}\.(?:cn-hongkong|ap-southeast-1)\.maas\.aliyuncs\.com|dashscope-intl\.aliyuncs\.com|cn-hongkong\.dashscope\.aliyuncs\.com)$/.test(value)) throw fail('請貼上阿里雲提供的完整 API Host 或 API URL。');
+  return value;
+}
 export const models = (c, service) => [...new Set([c.models[service] || defaults[service][0], ...(c.fallback ? defaults[service] : [])])].slice(0, 4);
 export function estimate(c, service, textBytes, images, output, calls = 1) {
   const candidates = models(c, service);
@@ -22,7 +28,7 @@ export function estimate(c, service, textBytes, images, output, calls = 1) {
   return Math.ceil(total*1000)/1000;
 }
 export async function chat(c, key, service, system, prompt, images = [], signal, maxTokens = 12000, transport = fetch) {
-  if (typeof key !== 'string' || !/^[\x21-\x7e]{8,512}$/.test(key)) throw fail('請先輸入國際區域的 Qwen API Key。', 'missing_key');
+  if (typeof key !== 'string' || !/^[\x21-\x7e]{8,512}$/.test(key)) throw fail('請先輸入此 Workspace 的 Qwen API Key。', 'missing_key');
   const candidates = models(c, service), notes = [];
   for (const [i, model] of candidates.entries()) {
     if (signal?.aborted) throw fail('已取消。', 'cancelled');
@@ -36,7 +42,7 @@ export async function chat(c, key, service, system, prompt, images = [], signal,
           { type: 'text', text: prompt }, ...images.map(url => ({ type: 'image_url', image_url: { url } }))] }],
           response_format: { type: 'json_object' }, enable_thinking: false, stream: false, max_tokens: maxTokens })
       });
-      if ([401, 403].includes(response.status)) throw fail('金鑰無效、區域不符或沒有模型權限。請檢查國際區域 Qwen API Key 及 Workspace。', 'authentication');
+      if ([401, 403].includes(response.status)) throw fail('金鑰無效、區域不符或沒有模型權限。請檢查此 Workspace 的 Qwen API Key 及 Workspace。', 'authentication');
       if (!response.ok) {
         const fallback = [400, 404, 422, 429, 500, 502, 503, 504].includes(response.status);
         if (fallback && i < candidates.length-1) { notes.push(`${model} 無法使用，已切換至 ${candidates[i+1]}。`); continue; }
@@ -57,7 +63,7 @@ export async function chat(c, key, service, system, prompt, images = [], signal,
     } catch (error) {
       if (signal?.aborted) throw fail('已取消。已提交的請求仍可能計費。', 'cancelled');
       if (error.code) throw error;
-      throw fail(timeout.signal.aborted ? '模型處理逾時，請稍後重試。' : '未能連接國際 Qwen。請檢查網絡、Workspace 或瀏覽器連線限制。', 'network_error');
+      throw fail(timeout.signal.aborted ? '模型處理逾時，請稍後重試。' : '未能連接Qwen。請檢查網絡、Workspace 或瀏覽器連線限制。', 'network_error');
     } finally { clearTimeout(timer); signal?.removeEventListener('abort', abort); }
   }
 }

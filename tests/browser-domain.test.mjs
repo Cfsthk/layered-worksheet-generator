@@ -29,9 +29,13 @@ test('extension only appears when explicitly enabled', () => {
   assert.equal(checkedVersion(v, source(), 1, false).extension, null);
   assert.equal(checkedVersion(v, source(), 1, true).extension.objective, 'extension');
 });
-test('region stays international and unknown model price requires confirmation', () => {
-  assert.equal(host(config()), 'dashscope-intl.aliyuncs.com');
-  assert.equal(host(config({ workspace: 'llm-example' })), 'llm-example.ap-southeast-1.maas.aliyuncs.com');
+test('use the supplied workspace host without changing its region', () => {
+  const expected = 'ws-s57l452ce7d9h3vk.cn-hongkong.maas.aliyuncs.com';
+  assert.equal(host(config()), expected);
+  for (const workspace of [expected, `https://${expected}/api/v1`, `https://${expected}/compatible-mode/v1/`, 'ws-s57l452ce7d9h3vk']) assert.equal(host(config({ workspace })), expected);
+  assert.equal(host(config({ workspace: 'llm-example.ap-southeast-1.maas.aliyuncs.com' })), 'llm-example.ap-southeast-1.maas.aliyuncs.com');
+  assert.equal(host(config({ workspace: 'https://dashscope-intl.aliyuncs.com/api/v1' })), 'dashscope-intl.aliyuncs.com');
+  for (const workspace of [`https://${expected}.evil.test/api/v1`, `https://key@${expected}/api/v1`, `http://${expected}/api/v1`, `https://${expected}/api/v1?key=oops`]) assert.throws(() => config({ workspace }));
   assert.throws(() => config({ workspace: 'evil.com/' }));
   assert.equal(estimate(config({ models: { vision: 'custom' } }), 'vision', 1, 1, 100), null);
 });
@@ -42,7 +46,7 @@ test('vision call includes images and key only in Authorization; fallback on exp
   });
   assert.equal(calls.length, 2); assert.equal(result.meta.notes.length, 1);
   for (const { url, options } of calls) {
-    assert.match(url, /^https:\/\/dashscope-intl\.aliyuncs\.com\//);
+    assert.equal(url, 'https://ws-s57l452ce7d9h3vk.cn-hongkong.maas.aliyuncs.com/compatible-mode/v1/chat/completions');
     assert.equal(options.headers.Authorization, 'Bearer test-only-key');
     assert.equal(options.redirect, 'error'); assert.equal(options.credentials, 'omit');
     assert.equal(options.body.includes('test-only-key'), false);

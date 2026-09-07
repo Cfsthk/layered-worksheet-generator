@@ -39,7 +39,7 @@ const levelName = (n, baseline = 4) => n === baseline ? t("原稿程度", "Origi
 
 function persistPreferences() {
   try {
-    localStorage.setItem(PREFS, JSON.stringify({ lang: state.lang, presets: state.presets, models: state.models, workspace: $("#workspace-id").value, fallback: $("#fallback").checked, cost: $("#cost-limit").value }));
+    localStorage.setItem(PREFS, JSON.stringify({ connectionVersion: 'host-v1', lang: state.lang, presets: state.presets, models: state.models, workspace: $("#workspace-id").value, fallback: $("#fallback").checked, cost: $("#cost-limit").value }));
   } catch { toast(t("這個瀏覽器未能儲存設定。", "This browser could not save preferences.")); }
 }
 function persistProject() {
@@ -145,10 +145,12 @@ function renderModels() {
   $("#model-options").innerHTML = [["vision",t("文件閱讀", "Document reading")],["language",t("題目與推理", "Questions & reasoning")],["image",t("插圖", "Illustrations")]].map(([key,label])=>`<label class="model-option"><span>${label}</span><select data-model="${key}" aria-label="${label}"><option value="auto" ${!state.models[key]?"selected":""}>${t("自動選擇", "Automatic")}</option><option value="custom" ${state.models[key]?"selected":""}>${t("指定模型", "Custom model")}</option></select><input data-model-id="${key}" aria-label="${label} Model ID" placeholder="Model ID" value="${esc(state.models[key])}" ${state.models[key]?"":"hidden"}/></label>`).join("");
 }
 function syncEndpoint() {
-  const raw=$("#workspace-id").value.trim();
-  const valid=/^[a-zA-Z0-9-]+$/.test(raw);
-  $("#workspace-id").setCustomValidity(raw && !valid ? t("只可使用英文字母、數字及連字號。", "Use letters, numbers and hyphens.") : "");
-  $("#endpoint").textContent=raw?`https://${valid?raw:"{WorkspaceId}"}.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1`:"https://dashscope-intl.aliyuncs.com/compatible-mode/v1";
+  let raw=$("#workspace-id").value.trim() || 'ws-s57l452ce7d9h3vk.cn-hongkong.maas.aliyuncs.com';
+  if (/^[A-Za-z0-9-]{1,80}$/.test(raw)) raw += '.cn-hongkong.maas.aliyuncs.com';
+  raw = raw.replace(/^https:\/\//, '').replace(/\/(?:api\/v1|compatible-mode\/v1)\/?$/, '').replace(/\/$/, '');
+  const valid=/^(?:[A-Za-z0-9-]{1,80}\.(?:cn-hongkong|ap-southeast-1)\.maas\.aliyuncs\.com|dashscope-intl\.aliyuncs\.com|cn-hongkong\.dashscope\.aliyuncs\.com)$/.test(raw);
+  $("#workspace-id").setCustomValidity(valid ? '' : t('請貼上阿里雲提供的 API Host 或 API URL。', 'Paste the API Host or API URL from Alibaba Cloud.'));
+  $("#endpoint").textContent = valid ? `https://${raw}/compatible-mode/v1` : '';
 }
 
 function gcd(a,b){ while(b){[a,b]=[b,a%b];}return a; }
@@ -338,7 +340,7 @@ dropzone.addEventListener("dragleave",()=>dropzone.classList.remove("dragover"))
 dropzone.addEventListener("drop",e=>{e.preventDefault();dropzone.classList.remove("dragover");handleFile(e.dataTransfer.files[0]);});
 document.addEventListener("dragover",e=>e.preventDefault());
 document.addEventListener("drop",e=>e.preventDefault());
-$("#workspace-id").value=storedPreferences.workspace||"";
+$("#workspace-id").value=storedPreferences.connectionVersion === 'host-v1' ? (storedPreferences.workspace || '') : 'ws-s57l452ce7d9h3vk.cn-hongkong.maas.aliyuncs.com';
 $("#fallback").checked=storedPreferences.fallback!==false;
 $("#cost-limit").value=storedPreferences.cost||"1";
 syncEndpoint();translate();setView("home");

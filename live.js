@@ -27,7 +27,7 @@ function installLiveUI() {
 
 async function localAPI(path, data, { key = false, binary = false, signal } = {}) {
   if (browserMode) {
-    browserService ||= import(new URL('browser/entry.js?v=4.3', document.baseURI).href);
+    browserService ||= import(new URL('browser/entry.js?v=4.4', document.baseURI).href);
     let service;
     try { service = await browserService; }
     catch { browserService = null; throw new Error(t('文件工具未能載入，請重新整理網頁後再試。', 'Document tools could not load. Refresh the page and retry.')); }
@@ -58,7 +58,7 @@ function requireConnection() {
   if (!live.available) throw new Error(t("請先開啟 start.command，啟動本機服務。", "Run start.command to start the local service."));
   if (!$("#api-key").value.trim()) {
     showDialog("settings"); $("#api-key").focus();
-    throw new Error(t("請先在 Qwen 設定輸入國際區域的 API Key，再繼續。", "Enter your international Qwen API key in settings, then continue."));
+    throw new Error(t("請先在 Qwen 設定輸入此 Workspace 的 API Key，再繼續。", "Enter your workspace Qwen API key in settings, then continue."));
   }
   if (!$("#workspace-id").checkValidity() || !$("#cost-limit").checkValidity()) {
     showDialog("settings"); $("#settings-dialog details").open = true;
@@ -96,7 +96,7 @@ async function runLive(operation, payload) {
     const response = await localAPI("/api/jobs", { quoteId: quote.quoteId, approveCost: !!quote.needsConfirmation }, { key: true });
     live.job = response.jobId;
     $("#progress-dialog .eyebrow").textContent = t("正在製作", "CREATING WORKSHEETS");
-    $("#progress-dialog .field-note").textContent = t("國際連線 · 所需時間按文件和模型而異", "International connection · Time depends on the document and model");
+    $("#progress-dialog .field-note").textContent = t("Workspace 連線 · 所需時間按文件和模型而異", "Workspace connection · Time depends on the document and model");
     $("#progress-label").textContent = t("正在連接…", "Connecting…");
     $("#progress-bar").style.width = "10%";
     showDialog("progress");
@@ -181,7 +181,7 @@ function renderLiveImport() {
   $("#source-name").textContent = state.fileName;
   $("#import-notice").hidden = false;
   $("#import-notice").textContent = live.source ? t(`已讀取 ${live.source.questions.length} 題。請確認目標；如有誤讀，可按「檢查內容」修正。`, `Read ${live.source.questions.length} questions. Confirm the objective; use Check content to correct reading errors.`)
-    : live.document ? t(browserMode ? '檔案已準備好。Qwen 會讀取文字、圖片及題目。' : '本機已讀取檔案。按下方按鈕後，內容才會傳送至國際 Qwen 服務。', browserMode ? 'File ready. Qwen will read its text, pictures and questions.' : "File read locally. Its content is sent to Qwen's international service when you press the button below.")
+    : live.document ? t(browserMode ? '檔案已準備好。Qwen 會讀取文字、圖片及題目。' : '本機已讀取檔案。按下方按鈕後，內容才會傳送至Qwen 服務。', browserMode ? 'File ready. Qwen will read its text, pictures and questions.' : "File read locally. Its content is sent to Qwen service when you press the button below.")
     : t(live.busy ? "正在本機讀取檔案…" : "未能讀取檔案，請更換或重試。", live.busy ? "Reading locally…" : "Could not read the file. Choose another or retry.");
   $(".source-preview .preview-label span:last-child").textContent = live.source ? t("讀取內容", "Extracted content") : t("本機預覽", "Local preview");
   return true;
@@ -316,15 +316,15 @@ function afterTranslate() {
   $('.file-types').textContent = 'DOC · DOCX · PDF · JPG · JPEG · PNG';
   copyLabel("#settings-dialog h2", "連接你的 Qwen", "Connect your Qwen account");
   copyLabel("#settings-dialog .dialog-intro", "文件理解及題目調整使用同一個模型服務金鑰。精確數學圖解由本機繪製。", "Document reading and question adaptation use the same model-service key. Exact maths diagrams are drawn locally.");
-  copyLabel("#settings-dialog .field > small", "金鑰不會儲存到磁碟。只有讀取、製作或測試時才送交國際 Qwen 服務。", "The key is not saved to disk. It is sent to Qwen's international service only when reading, generating or testing.");
-  copyLabel("#settings-dialog .region-note", "官方國際區域 · 推理範圍按 Workspace 設定", "Official international region · Inference scope follows your workspace");
+  copyLabel("#settings-dialog .field > small", "金鑰不會儲存到磁碟。只有讀取、製作或測試時才送交Qwen 服務。", "The key is not saved to disk. It is sent to Qwen service only when reading, generating or testing.");
+  copyLabel("#settings-dialog .region-note", "使用你提供的 API Host · 區域按主機設定", "Using your API Host · Region follows the host");
   copyLabel("#settings-dialog .options-body > small", "圖片生成未接駁：目前只接駁文字及視覺理解模型。", "Image generation is not connected yet; language and vision models are supported.");
   copyLabel("#settings-dialog .service-list > div:last-child > span", "精確數學圖解", "Exact maths diagrams");
   $("#settings-dialog .service-list > div:last-child small").textContent = t("本機", "Local");
   const imageSelect = $("[data-model='image']"); if (imageSelect) { imageSelect.disabled = true; imageSelect.innerHTML = `<option>${t("圖片生成未接駁", "Image generation deferred")}</option>`; $("[data-model-id='image']").hidden = true; }
-  $("#workspace-id").placeholder = t("選填；留空使用國際預設端點", "Optional; blank uses the international default");
+  $("#workspace-id").placeholder = t("貼上 API Host 或 API URL", "Paste an API Host or API URL");
   copyLabel("#about-dialog h2", "分層工作紙生成", "Differentiated worksheet generator");
-  copyLabel("#about-dialog .dialog-intro", "可上載 PDF、Word 或圖片，透過國際 Qwen 讀取及改編工作紙，並匯出可編輯的 Word。沒有金鑰也可使用分數示範。內容及難度尚需老師核對，未經官方課程校準。圖片生成、音訊及影片仍未接駁。", "Upload PDF, Word or images, use international Qwen to read and adapt them, and export editable Word documents. The fraction demo works without a key. Teachers must review content and difficulty; formal curriculum calibration, generated illustrations, audio and video are not connected.");
+  copyLabel("#about-dialog .dialog-intro", "可上載 PDF、Word 或圖片，透過Qwen 讀取及改編工作紙，並匯出可編輯的 Word。沒有金鑰也可使用分數示範。內容及難度尚需老師核對，未經官方課程校準。圖片生成、音訊及影片仍未接駁。", "Upload PDF, Word or images, use Qwen to read and adapt them, and export editable Word documents. The fraction demo works without a key. Teachers must review content and difficulty; formal curriculum calibration, generated illustrations, audio and video are not connected.");
   $("#use-qwen").checked = state.imported ? false : $("#use-qwen").checked;
   syncSetup(); reviewRendered();
 }
