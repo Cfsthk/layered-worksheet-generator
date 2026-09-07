@@ -10,6 +10,8 @@
 
 這個公開版本是本機工具：文件讀取、Word 匯出及 Qwen 接駁由 `serve.py` 提供。GitHub Pages 只能顯示靜態介面，不能代替這個本機服務；請勿把 API Key 放入程式碼或公開檔案。
 
+GitHub Pages 靜態示範：[分層工作紙生成](https://cfsthk.github.io/layered-worksheet-generator/)。示範工作紙可在瀏覽器中預覽；上載、Qwen 連線及 Word 匯出請依照上面的本機步驟執行。
+
 ## 第一次使用
 
 1. 按「連接 Qwen」，輸入香港區域的 API Key。Workspace ID 選填。「測試文字模型連線」會作一次小額請求，只驗證文字模型。
